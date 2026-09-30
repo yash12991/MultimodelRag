@@ -1,0 +1,22 @@
+# REQUIRED API KEYS & CONFIGURATIONS
+
+To make this Advanced Agentic RAG work perfectly (including Web Search, Wikipedia, PDF RAG, and Notion Integration), you need to add the following variables to your `.env` file located at: `/Users/yashsonawane/Advance structural /.env`
+
+```env
+# 1. Google Gemini API Key (Required for the core AI Agent)
+# Get it here: https://aistudio.google.com/app/apikey
+GOOGLE_API_KEY=your_google_api_key_here
+
+# 2. Notion Internal Integration Token (Required for Notion Access)
+# Get it here: https://www.notion.so/my-integrations
+# Create a new integration, copy the "Internal Integration Secret".
+# IMPORTANT: You must "Share" the specific Notion pages/databases you want the agent to see with your integration.
+NOTION_TOKEN=secret_your_notion_token_here
+```
+
+### Have Everything?
+Once you have pasted your real keys into the `.env` file, the Agent will have *everything* it needs to:
+- Browse the web
+- Search Wikipedia
+- Read local PDFs
+- Read your Notion workspace
