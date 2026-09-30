@@ -381,7 +381,7 @@ MCP_SERVERS = {
         "id": "github",
         "name": "GitHub MCP",
         "category": "Developer Tools",
-        "icon": "🐙",
+        "icon": "github",
         "description": "Interact with repositories, commit histories, pull requests, and file contents.",
         "enabled": True,
         "tools": [
@@ -427,7 +427,7 @@ MCP_SERVERS = {
         "id": "filesystem",
         "name": "Filesystem MCP",
         "category": "Developer Tools",
-        "icon": "📁",
+        "icon": "filesystem",
         "description": "Secure local workspace file operations: directory browsing, search, read, and write.",
         "enabled": True,
         "tools": [
@@ -458,7 +458,7 @@ MCP_SERVERS = {
         "id": "database",
         "name": "Postgres / SQLite MCP",
         "category": "Data & Databases",
-        "icon": "🗄️",
+        "icon": "database",
         "description": "Inspect schemas, table structures, and run analytical SELECT queries on jarvis.db.",
         "enabled": True,
         "tools": [
@@ -489,7 +489,7 @@ MCP_SERVERS = {
         "id": "fetch",
         "name": "Fetch & Web MCP",
         "category": "Web & Network",
-        "icon": "🌐",
+        "icon": "fetch",
         "description": "Fetch web pages, extract article content, strip HTML clutter, and inspect API endpoints.",
         "enabled": True,
         "tools": [
@@ -506,7 +506,7 @@ MCP_SERVERS = {
         "id": "system_os",
         "name": "System Resources MCP",
         "category": "DevOps & System",
-        "icon": "⚡",
+        "icon": "system",
         "description": "Live CPU, load averages, memory, disk storage, and host operating system telemetry.",
         "enabled": True,
         "tools": [
@@ -523,7 +523,7 @@ MCP_SERVERS = {
         "id": "docker",
         "name": "Docker Engine MCP",
         "category": "DevOps & System",
-        "icon": "🐳",
+        "icon": "docker",
         "description": "Manage local Docker containers, check active image instances and system daemon health.",
         "enabled": True,
         "tools": [
@@ -540,7 +540,7 @@ MCP_SERVERS = {
         "id": "weather",
         "name": "Live Weather MCP",
         "category": "Web & Network",
-        "icon": "🌤️",
+        "icon": "weather",
         "description": "High-accuracy live meteorological data, temperatures, and wind speeds via OpenMeteo.",
         "enabled": True,
         "tools": [
@@ -557,7 +557,7 @@ MCP_SERVERS = {
         "id": "notion",
         "name": "Notion Workspace MCP",
         "category": "Productivity",
-        "icon": "📝",
+        "icon": "notion",
         "description": "Direct bidirectional integration with Notion pages, task lists, and sprint boards.",
         "enabled": True,
         "tools": [
@@ -574,7 +574,7 @@ MCP_SERVERS = {
         "id": "slack",
         "name": "Slack MCP",
         "category": "Productivity",
-        "icon": "💬",
+        "icon": "slack",
         "description": "Send notifications to Slack channels, post updates, and trigger team webhooks.",
         "enabled": True,
         "tools": [
@@ -591,7 +591,7 @@ MCP_SERVERS = {
         "id": "chroma_rag",
         "name": "ChromaDB Vector RAG MCP",
         "category": "Data & Databases",
-        "icon": "🧠",
+        "icon": "chroma",
         "description": "Semantic dense vector database storing embedded chunks of uploaded PDFs and transcripts.",
         "enabled": True,
         "tools": [
@@ -730,7 +730,7 @@ def add_custom_mcp_server(name: str, endpoint: str, category: str = "Custom Inte
         "id": server_id,
         "name": name,
         "category": category or "Custom Integrations",
-        "icon": "🔌",
+        "icon": "tool",
         "description": description or f"Custom MCP endpoint: {endpoint}",
         "endpoint": endpoint,
         "status": "connected",

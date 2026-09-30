@@ -237,16 +237,16 @@ def list_documents():
                 elif ext in [".mp4", ".mov", ".avi", ".mkv"]: file_type = "video"
                 else: file_type = "text"
                 
-            icon = "📑"
+            icon = "pdf"
             type_label = "PDF Document"
             if file_type == "audio":
-                icon = "🎙️"
+                icon = "audio"
                 type_label = "Audio / Meeting Recording"
             elif file_type == "video":
-                icon = "🎬"
+                icon = "video"
                 type_label = "Video Presentation / Inspection"
             elif file_type == "text":
-                icon = "📄"
+                icon = "file"
                 type_label = "Document / Code"
                 
             has_transcript = os.path.exists(f"{path}.transcript.txt")
@@ -337,7 +337,7 @@ def system_status():
         integrations_dict[s["id"]] = {
             "name": s["name"],
             "status": s["status"],
-            "icon": s.get("icon", "🔌"),
+            "icon": s.get("icon", "tool"),
             "category": s.get("category", "General"),
             "tools_count": s.get("tool_count", 0)
         }

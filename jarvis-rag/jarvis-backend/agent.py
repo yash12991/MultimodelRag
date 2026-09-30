@@ -166,42 +166,42 @@ class PerplexityStepTracker(BaseCallbackHandler):
         tool_name = serialized.get("name", "Tool")
         clean_input = str(input_str).strip(" '\"")
         
-        icon = "🔍"
+        icon = "search"
         tool_type = "tool"
         title = f'Tool: {tool_name}'
         
         name_lower = tool_name.lower()
         if "mcp" in name_lower:
-            icon = "🔌"
+            icon = "mcp"
             tool_type = "mcp"
             clean_name = tool_name.replace("MCP_", "").replace("_", " ")
             title = f'MCP {clean_name}: "{clean_input[:50]}"' if clean_input else f'MCP {clean_name}'
         elif "notion" in name_lower:
-            icon = "🔍"
+            icon = "notion"
             tool_type = "notion"
             title = f'Queried Notion: "{clean_input[:55]}"' if clean_input else 'Queried Notion Workspace'
         elif "knowledge" in name_lower or "rag" in name_lower or "chroma" in name_lower:
-            icon = "📚"
+            icon = "vector"
             tool_type = "vector"
             title = f'ChromaDB Vector Search: "{clean_input[:55]}"'
         elif "search" in name_lower or "duckduckgo" in name_lower or "web" in name_lower:
-            icon = "🌐"
+            icon = "web"
             tool_type = "web"
             title = f'Web Search: "{clean_input[:55]}"'
         elif "wiki" in name_lower:
-            icon = "🌐"
+            icon = "web"
             tool_type = "web"
             title = f'Wikipedia: "{clean_input[:55]}"'
         elif "weather" in name_lower:
-            icon = "🌤️"
+            icon = "weather"
             tool_type = "weather"
             title = f'Live Weather: "{clean_input[:55]}"'
         elif "calendar" in name_lower:
-            icon = "📅"
+            icon = "calendar"
             tool_type = "calendar"
             title = f'Calendar Schedule: "{clean_input[:55]}"'
         elif "git" in name_lower or "github" in name_lower:
-            icon = "🐙"
+            icon = "github"
             tool_type = "github"
             if "push" in name_lower:
                 title = f'Pushing to GitHub: "{clean_input[:45]}"' if clean_input else 'Pushing to GitHub'
@@ -210,12 +210,12 @@ class PerplexityStepTracker(BaseCallbackHandler):
             else:
                 title = f'GitHub ({tool_name}): "{clean_input[:45]}"' if clean_input else f'GitHub: {tool_name}'
         elif "pdf" in name_lower:
-            icon = "📄"
+            icon = "pdf"
             tool_type = "pdf"
             p_title = clean_input.split("|")[0].strip() if "|" in clean_input else clean_input[:45]
             title = f'Generate PDF: "{p_title}"' if p_title else 'Generate PDF Document'
         elif "read_file" in name_lower or "write_file" in name_lower or "localfile" in name_lower or "filesystem" in name_lower:
-            icon = "📁"
+            icon = "file"
             tool_type = "file"
             title = f'Local File: "{clean_input[:55]}"'
 

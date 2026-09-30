@@ -134,7 +134,7 @@ def execute_deep_research(user_query: str, username: str = "default") -> Tuple[s
     tool_steps.append({
         "id": "step-decomp",
         "type": "tool",
-        "icon": "🧠",
+        "icon": "research",
         "title": f"Formulated Research Plan ({len(search_queries)} Angles)",
         "summary": " • ".join([f'"{q}"' for q in search_queries]),
         "details": f"Targeting multi-source cross-verification across: {', '.join(search_queries)}",
@@ -165,7 +165,7 @@ def execute_deep_research(user_query: str, username: str = "default") -> Tuple[s
     tool_steps.append({
         "id": "step-sources",
         "type": "web",
-        "icon": "🌐",
+        "icon": "web",
         "title": f"Consulted {len(indexed_sources)} Authoritative Web Sources",
         "summary": f"Retrieved verified citations across {', '.join(list(set(s['domain'] for s in indexed_sources))[:4])}",
         "details": "\n".join([f"[{s['index']}] {s['title']} ({s['url']})" for s in indexed_sources]),

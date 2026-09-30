@@ -142,12 +142,12 @@ def ingest_audio(file_path: str) -> Dict[str, Any]:
             "You are an elite speech intelligence and meeting recording analyst.\n"
             "Analyze and transcribe this audio recording completely with high precision.\n"
             "Format your output in clean Markdown with these exact sections:\n\n"
-            "### 📋 Executive Meeting Summary\n"
+            "### Executive Meeting Summary\n"
             "[Comprehensive overview of what was discussed, core objectives, and outcomes]\n\n"
-            "### 🎯 Key Action Items & Decisions\n"
+            "### Key Action Items & Decisions\n"
             "- [Action item or decision 1]\n"
             "- [Action item or decision 2]\n\n"
-            "### 🗣️ Verbatim Transcript\n"
+            "### Verbatim Transcript\n"
             "[Detailed spoken transcript with timestamps and speaker labels where audible]"
         )
 
@@ -166,7 +166,8 @@ def ingest_audio(file_path: str) -> Dict[str, Any]:
 
         # Split into searchable RAG chunks
         # Chunk 1: Summary & Action Items
-        summary_part = analysis.split("### 🗣️ Verbatim Transcript")[0]
+        sep = "### Verbatim Transcript"
+        summary_part = analysis.split(sep)[0] if sep in analysis else analysis
         chunks.append({
             "content": f"=== Audio Intelligence: {filename} ===\n{summary_part.strip()}",
             "metadata": {
@@ -178,8 +179,8 @@ def ingest_audio(file_path: str) -> Dict[str, Any]:
         })
 
         # Chunk 2..N: Verbatim Transcript
-        if "### 🗣️ Verbatim Transcript" in analysis:
-            transcript_part = analysis.split("### 🗣️ Verbatim Transcript")[1]
+        if sep in analysis:
+            transcript_part = analysis.split(sep)[1]
             words = transcript_part.split()
             step_size = 350
             for i in range(0, len(words), step_size):
@@ -239,9 +240,9 @@ def ingest_video(file_path: str) -> Dict[str, Any]:
             "You are an elite video intelligence and topic indexing AI.\n"
             "Perform a comprehensive scene-by-scene topic indexing of this video recording.\n"
             "Format your output in clean Markdown with these exact sections:\n\n"
-            "### 🎬 Executive Video Overview\n"
+            "### Executive Video Overview\n"
             "[Concise summary of the video topic, purpose, and key takeaways]\n\n"
-            "### ⏱️ Scene-by-Scene Topic Index\n"
+            "### Scene-by-Scene Topic Index\n"
             "- **[00:00:00] Scene 1: [Topic Title]**\n"
             "  * Visual: [What is visible on screen, diagrams, code, slides, or environment]\n"
             "  * Discussion: [What is explained or demonstrated]\n"

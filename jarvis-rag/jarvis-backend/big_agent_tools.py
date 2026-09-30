@@ -41,8 +41,8 @@ def get_github_repo_info(repo_name: str) -> str:
         items = []
         try:
             for item in repo.get_contents("")[:20]:
-                icon = "📁" if item.type == "dir" else "📄"
-                items.append(f"{icon} {item.path}")
+                prefix = "[dir]" if item.type == "dir" else "[file]"
+                items.append(f"{prefix} {item.path}")
         except Exception:
             pass
         contents_str = "\n".join(items) if items else "Empty or no root files."
@@ -150,7 +150,7 @@ def push_file_to_github(args_str: str) -> str:
             )
             sha = res["commit"].sha[:7]
             url = res["commit"].html_url
-            return f"✅ Updated `{file_path}` in `{repo.full_name}` ({target_branch}). Commit: {sha} - {url}"
+            return f"Updated `{file_path}` in `{repo.full_name}` ({target_branch}). Commit: {sha} - {url}"
         except Exception:
             res = repo.create_file(
                 path=file_path,
@@ -160,7 +160,7 @@ def push_file_to_github(args_str: str) -> str:
             )
             sha = res["commit"].sha[:7]
             url = res["commit"].html_url
-            return f"✅ Created `{file_path}` in `{repo.full_name}` ({target_branch}). Commit: {sha} - {url}"
+            return f"Created `{file_path}` in `{repo.full_name}` ({target_branch}). Commit: {sha} - {url}"
     except Exception as e:
         return f"Error pushing file to GitHub: {str(e)}"
 
@@ -205,7 +205,7 @@ def create_github_repo(args_str: str) -> str:
             private=private,
             auto_init=True
         )
-        return f"✅ Successfully created GitHub repository: `{repo.full_name}`\nURL: {repo.html_url}\nClone URL: {repo.clone_url}"
+        return f"Successfully created GitHub repository: `{repo.full_name}`\nURL: {repo.html_url}\nClone URL: {repo.clone_url}"
     except Exception as e:
         return f"Error creating repository '{name}': {str(e)}"
 
@@ -249,12 +249,12 @@ def push_project_to_github(args_str: str) -> str:
             try:
                 existing = repo.get_contents(p, ref=target_branch)
                 repo.update_file(path=existing.path, message=f"{commit_msg}: update {p}", content=c, sha=existing.sha, branch=target_branch)
-                pushed.append(f"✓ Updated `{p}`")
+                pushed.append(f"Updated `{p}`")
             except Exception:
                 repo.create_file(path=p, message=f"{commit_msg}: add {p}", content=c, branch=target_branch)
-                pushed.append(f"+ Created `{p}`")
+                pushed.append(f"Created `{p}`")
                 
-        return f"🚀 Successfully pushed {len(pushed)} file(s) to GitHub repository `{repo.full_name}` ({target_branch})!\n" + "\n".join(pushed) + f"\n\nRepository: {repo.html_url}"
+        return f"Successfully pushed {len(pushed)} file(s) to GitHub repository `{repo.full_name}` ({target_branch})\n" + "\n".join(pushed) + f"\n\nRepository: {repo.html_url}"
     except Exception as e:
         return f"Error pushing project to GitHub: {str(e)}"
 
@@ -347,7 +347,7 @@ def git_push_local_repo(args_str: str = "Update via Aisia Agent") -> str:
         repo_url = f"https://github.com/{repo_display}"
         
         if push_res.returncode == 0:
-            return f"✅ Successfully committed and pushed local workspace to GitHub!\nRepository: {repo_url}\nBranch: `{branch}`\nMessage: {commit_msg}"
+            return f"Successfully committed and pushed local workspace to GitHub!\nRepository: {repo_url}\nBranch: `{branch}`\nMessage: {commit_msg}"
         return f"Git push status: {push_res.stderr or push_res.stdout}"
     except Exception as e:
         return f"Error pushing local git repo: {str(e)}"

@@ -465,7 +465,9 @@ export const ChatMessageContent: React.FC<ChatMessageContentProps> = ({
       {sources && sources.length > 0 && (
         <div className="perplexity-sources-section">
           <div className="perplexity-sources-header">
-            <span className="sources-header-icon">🌐</span>
+            <span className="sources-header-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </span>
             <span className="sources-header-title">Verified Sources</span>
             <span className="sources-count-pill">{sources.length} sources</span>
           </div>
@@ -491,7 +493,9 @@ export const ChatMessageContent: React.FC<ChatMessageContentProps> = ({
                         }} 
                       />
                     ) : (
-                      <span className="source-default-icon">🌐</span>
+                      <span className="source-default-icon">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                      </span>
                     )}
                   </div>
                   <span className="source-card-domain">{src.domain}</span>
@@ -511,7 +515,9 @@ export const ChatMessageContent: React.FC<ChatMessageContentProps> = ({
       {projectArtifact && onOpenArtifact && (
         <div className="chat-project-banner">
           <div className="chat-project-banner-info">
-            <span className="project-banner-icon">📁</span>
+            <span className="project-banner-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            </span>
             <div>
               <div className="project-banner-title">{projectArtifact.title}</div>
               <div className="project-banner-sub">
@@ -608,7 +614,9 @@ export const ChatMessageContent: React.FC<ChatMessageContentProps> = ({
       {followUps && followUps.length > 0 && !isStreaming && (
         <div className="perplexity-followups-container">
           <div className="followups-title">
-            <span className="followups-icon">💡</span>
+            <span className="followups-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
             <span>Explore Next & Follow-Up Tasks</span>
           </div>
           <div className="followups-list">

@@ -117,6 +117,9 @@ def resolve_voice_for_text(text: str, default_voice: str = "en-US-AvaNeural", re
     # 3. Default voice
     return default_voice or "en-US-AvaNeural"
 
+_AUDIO_CACHE: Dict[tuple, str] = {}
+_MAX_CACHE_SIZE = 128
+
 async def synthesize_sentence_audio(
     text: str, 
     voice: str = "en-US-AvaNeural", 
@@ -129,6 +132,10 @@ async def synthesize_sentence_audio(
         return ""
     
     actual_voice = resolve_voice_for_text(clean, voice or "en-US-AvaNeural", requested_lang=language)
+    cache_key = (clean, actual_voice, rate or "+0%", pitch or "+0Hz")
+    if cache_key in _AUDIO_CACHE:
+        return _AUDIO_CACHE[cache_key]
+
     try:
         comm = edge_tts.Communicate(clean, actual_voice, rate=rate, pitch=pitch)
         audio = b""
@@ -136,7 +143,11 @@ async def synthesize_sentence_audio(
             if chunk["type"] == "audio":
                 audio += chunk["data"]
         if audio:
-            return base64.b64encode(audio).decode("utf-8")
+            b64 = base64.b64encode(audio).decode("utf-8")
+            if len(_AUDIO_CACHE) >= _MAX_CACHE_SIZE:
+                _AUDIO_CACHE.pop(next(iter(_AUDIO_CACHE)))
+            _AUDIO_CACHE[cache_key] = b64
+            return b64
         return ""
     except Exception as e:
         print(f"Error synthesizing audio with {actual_voice}: {e}")
@@ -215,7 +226,7 @@ async def stream_agent_events(
         mem_step = {
             "id": f"step-mem-{uuid.uuid4()}",
             "type": "memory",
-            "icon": "🧠",
+            "icon": "memory",
             "title": "Recalled from Long-Term Memory",
             "summary": summary_val,
             "details": "\n".join([f"• {m['key']}: {m['value']}" for m in user_memories]),
@@ -238,7 +249,7 @@ async def stream_agent_events(
     )
 
     if is_deep_research:
-        yield f"data: {json.dumps({'type': 'status', 'message': '🧠 Formulating research plan and sub-queries...'})}\n\n"
+        yield f"data: {json.dumps({'type': 'status', 'message': 'Formulating research plan and sub-queries...'})}\n\n"
         await asyncio.sleep(0.05)
         
         reply, sources, follow_ups, tool_steps = await asyncio.to_thread(
@@ -247,7 +258,7 @@ async def stream_agent_events(
         
         # Multi-Action Autonomous Chaining (e.g. Research + Notion Task / Page creation)
         if "notion" in query.lower() and ("add" in query.lower() or "save" in query.lower() or "create" in query.lower() or "sync" in query.lower()):
-            yield f"data: {json.dumps({'type': 'status', 'message': '📝 Syncing research brief to Notion workspace...'})}\n\n"
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Syncing research brief to Notion workspace...'})}\n\n"
             try:
                 import notion_tools
                 task_title = f"Research: {query[:45]}"
@@ -255,14 +266,14 @@ async def stream_agent_events(
                 tool_steps.append({
                     "id": "step-notion-chained",
                     "type": "notion",
-                    "icon": "📝",
+                    "icon": "notion",
                     "title": f'Synced to Notion: "{task_title}"',
                     "summary": "1 task/brief created in workspace",
                     "details": str(notion_res),
                     "sources": [{"title": "Notion Workspace", "url": "https://notion.so", "domain": "notion.so"}],
                     "status": "completed"
                 })
-                reply += f"\n\n---\n✅ *Autonomously synced task to Notion: **{task_title}***"
+                reply += f"\n\n---\n*Autonomously synced task to Notion: **{task_title}***"
             except Exception as e:
                 print(f"Chained Notion action error: {e}")
 
@@ -282,18 +293,19 @@ async def stream_agent_events(
             yield f"data: {json.dumps({'type': 'token', 'content': sub})}\n\n"
             await asyncio.sleep(0.01)
 
-        # Stream voice audio for executive summary (non-blocking)
-        sentences = [s.strip() for s in re.split(r'(?<=[.!?\n])\s+', reply) if s.strip() and not s.startswith('#') and not s.startswith('-') and len(s) > 15][:2]
+        # Stream voice audio for executive summary in parallel without blocking
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?\n])\s+', reply) if s.strip() and not s.startswith(('#', '-', '*')) and len(s) > 12][:3]
         if not sentences and reply.strip():
             first_line = reply.strip().split('\n')[0]
             if len(first_line) > 2 and not first_line.startswith(('#', '-', '*')):
                 sentences = [first_line[:200]]
 
-        for sentence in sentences:
+        audio_tasks = [asyncio.create_task(synthesize_sentence_audio(s, voice, rate, language=language, pitch=pitch)) for s in sentences]
+        for s, t in zip(sentences, audio_tasks):
             try:
-                audio_b64 = await synthesize_sentence_audio(sentence, voice, rate, language=language, pitch=pitch)
+                audio_b64 = await asyncio.wait_for(t, timeout=2.5)
                 if audio_b64:
-                    yield f"data: {json.dumps({'type': 'audio', 'sentence': sentence, 'audio': audio_b64})}\n\n"
+                    yield f"data: {json.dumps({'type': 'audio', 'sentence': s, 'audio': audio_b64})}\n\n"
             except Exception:
                 pass
 
@@ -320,25 +332,29 @@ async def stream_agent_events(
         # Save reply to persistent SQLite memory
         memory.save_chat_message(username, "model", reply, thread_id=thread_id)
         
-        # Stream tokens with fast progressive pacing
-        words = reply.split(" ")
-        for i in range(0, len(words), 3):
-            sub = " ".join(words[i:i+3]) + " "
-            yield f"data: {json.dumps({'type': 'token', 'content': sub})}\n\n"
-            await asyncio.sleep(0.005)
-            
-        # Synthesize conversational speech without stalling
-        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', reply) if s.strip() and not s.startswith(('#', '-', '*', '<', '{', '/'))][:2]
+        # Prepare speech sentences and kick off synthesis in parallel with token streaming
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?\n])\s+', reply) if s.strip() and not s.startswith(('#', '-', '*', '<', '{', '/'))][:3]
         if not sentences and reply.strip():
             first_line = reply.strip().split('\n')[0]
             if len(first_line) > 2 and not first_line.startswith(('#', '-', '*', '<', '{', '/')):
                 sentences = [first_line[:200]]
 
-        for sentence in sentences:
+        # Launch synthesis concurrently
+        audio_tasks = [asyncio.create_task(synthesize_sentence_audio(s, voice, rate, language=language, pitch=pitch)) for s in sentences]
+
+        # Stream tokens with fast progressive pacing
+        words = reply.split(" ")
+        for i in range(0, len(words), 4):
+            sub = " ".join(words[i:i+4]) + " "
+            yield f"data: {json.dumps({'type': 'token', 'content': sub})}\n\n"
+            await asyncio.sleep(0.003)
+
+        # Yield audio as tasks complete
+        for s, t in zip(sentences, audio_tasks):
             try:
-                audio_b64 = await synthesize_sentence_audio(sentence, voice, rate, language=language, pitch=pitch)
+                audio_b64 = await asyncio.wait_for(t, timeout=2.5)
                 if audio_b64:
-                    yield f"data: {json.dumps({'type': 'audio', 'sentence': sentence, 'audio': audio_b64})}\n\n"
+                    yield f"data: {json.dumps({'type': 'audio', 'sentence': s, 'audio': audio_b64})}\n\n"
             except Exception:
                 pass
                 
@@ -485,70 +501,83 @@ async def stream_agent_events(
             config={"system_instruction": system_instruction}
         )
         
-        audio_tasks = []
-        
-        async for chunk in stream:
-            if chunk.text:
-                full_text += chunk.text
-                buffer += chunk.text
-                
-                # Emit token immediately with zero latency (< 400ms)
-                yield f"data: {json.dumps({'type': 'token', 'content': chunk.text})}\n\n"
-                
-                # Only split natural sentences for voice when not in code blocks (max 2 sentences for low latency)
-                if len(audio_tasks) < 2 and "```" not in buffer and "<!" not in buffer and "{" not in buffer:
-                    sentences = re.split(r'(?<=[.!?])\s+', buffer)
-                    if len(sentences) > 1:
-                        sentence_to_play = sentences[0].strip()
-                        buffer = " ".join(sentences[1:])
-                        # Synthesize only conversational sentences under 180 chars, skipping code/syntax
-                        if (sentence_to_play and len(sentence_to_play) > 3 and len(sentence_to_play) < 180 and 
-                            not sentence_to_play.startswith(('#', '-', '*', '<', '{', '/', ';'))):
-                            task = asyncio.create_task(synthesize_sentence_audio(sentence_to_play, voice, rate, language=language, pitch=pitch))
-                            audio_tasks.append((sentence_to_play, task))
-                            
-                            # Emit any ready audio chunks without blocking token generation
-                            while audio_tasks and audio_tasks[0][1].done():
-                                s_text, s_task = audio_tasks.pop(0)
-                                try:
-                                    audio_b64 = s_task.result()
-                                    if audio_b64:
-                                        yield f"data: {json.dumps({'type': 'audio', 'sentence': s_text, 'audio': audio_b64})}\n\n"
-                                except Exception:
-                                    pass
+        # Interleaved fast token & sentence-by-sentence streaming queue
+        event_queue = asyncio.Queue()
 
-        # Flush the final remaining sentence in buffer only if fewer than 2 sentences queued
-        if len(audio_tasks) < 2:
-            remaining = buffer.strip()
-            if (remaining and len(remaining) > 2 and len(remaining) < 200 and 
-                not remaining.startswith(('#', '-', '*', '<', '{', '/', ';', '`', '<!--', '/*'))):
-                task = asyncio.create_task(synthesize_sentence_audio(remaining, voice, rate, language=language, pitch=pitch))
-                audio_tasks.append((remaining, task))
-
-        # If no sentences were created, synthesize the conversational intro
-        if not audio_tasks and full_text.strip():
-            candidate = full_text.strip()
-            if "```" in candidate:
-                candidate = candidate.split("```")[0].strip()
-            if candidate and len(candidate) > 2 and len(candidate) < 200 and not candidate.startswith(('#', '-', '*', '<', '{', '/')):
-                task = asyncio.create_task(synthesize_sentence_audio(candidate, voice, rate, language=language, pitch=pitch))
-                audio_tasks.append((candidate, task))
-
-        # Await and yield audio chunks with strict 2.5s timeout per chunk so it never hangs
-        for s_text, s_task in audio_tasks[:2]:
+        async def run_producer():
             try:
-                audio_b64 = await asyncio.wait_for(s_task, timeout=2.5)
-                if audio_b64:
-                    yield f"data: {json.dumps({'type': 'audio', 'sentence': s_text, 'audio': audio_b64})}\n\n"
-            except Exception as e:
-                print(f"Audio task timeout/error: {e}")
+                full_text = ""
+                buffer = ""
+                audio_tasks = []
+                seq = 0
 
-        # Save assistant response to persistent SQLite memory
-        if full_text.strip():
-            memory.save_chat_message(username, "model", full_text.strip(), thread_id=thread_id)
-            
-        # Send done event
-        yield f"data: {json.dumps({'type': 'done', 'reply': full_text.strip()})}\n\n"
+                async def synthesize_and_enqueue(task_seq: int, s_text: str):
+                    try:
+                        audio_b64 = await synthesize_sentence_audio(s_text, voice, rate, language=language, pitch=pitch)
+                        if audio_b64:
+                            await event_queue.put({"type": "audio", "sentence": s_text, "audio": audio_b64, "seq": task_seq})
+                    except Exception as err:
+                        print(f"Audio task error: {err}")
+
+                async for chunk in stream:
+                    if chunk.text:
+                        full_text += chunk.text
+                        buffer += chunk.text
+                        await event_queue.put({"type": "token", "content": chunk.text})
+
+                        # Split on natural sentence boundaries as tokens arrive
+                        if len(audio_tasks) < 4 and "```" not in buffer and "<!" not in buffer and "{" not in buffer:
+                            sentences = re.split(r'(?<=[.!?\n])\s+', buffer)
+                            if len(sentences) > 1:
+                                sentence_to_play = sentences[0].strip()
+                                buffer = " ".join(sentences[1:])
+                                if (sentence_to_play and len(sentence_to_play) > 3 and len(sentence_to_play) < 220 and 
+                                    not sentence_to_play.startswith(('#', '-', '*', '<', '{', '/', ';'))):
+                                    t = asyncio.create_task(synthesize_and_enqueue(seq, sentence_to_play))
+                                    audio_tasks.append(t)
+                                    seq += 1
+
+                # Flush the final remaining sentence in buffer
+                if len(audio_tasks) < 4:
+                    remaining = buffer.strip()
+                    if (remaining and len(remaining) > 2 and len(remaining) < 220 and 
+                        not remaining.startswith(('#', '-', '*', '<', '{', '/', ';', '`', '<!--', '/*'))):
+                        t = asyncio.create_task(synthesize_and_enqueue(seq, remaining))
+                        audio_tasks.append(t)
+                        seq += 1
+
+                # If no sentences were created (e.g. short response), synthesize the full text
+                if not audio_tasks and full_text.strip():
+                    candidate = full_text.strip()
+                    if "```" in candidate:
+                        candidate = candidate.split("```")[0].strip()
+                    if candidate and len(candidate) > 2 and len(candidate) < 250 and not candidate.startswith(('#', '-', '*', '<', '{', '/')):
+                        t = asyncio.create_task(synthesize_and_enqueue(seq, candidate))
+                        audio_tasks.append(t)
+                        seq += 1
+
+                # Await pending audio tasks with a quick 3.0s timeout so we never hang
+                if audio_tasks:
+                    await asyncio.wait(audio_tasks, timeout=3.0)
+
+                # Save assistant response to persistent SQLite memory
+                if full_text.strip():
+                    memory.save_chat_message(username, "model", full_text.strip(), thread_id=thread_id)
+
+                await event_queue.put({"type": "done", "reply": full_text.strip()})
+            except Exception as e:
+                print(f"Producer error: {e}")
+                await event_queue.put({"type": "error", "error": str(e)})
+            finally:
+                await event_queue.put(None)
+
+        producer_task = asyncio.create_task(run_producer())
+
+        while True:
+            item = await event_queue.get()
+            if item is None:
+                break
+            yield f"data: {json.dumps(item)}\n\n"
 
     except Exception as e:
         print(f"Streaming error: {e}, falling back to direct agent...")
