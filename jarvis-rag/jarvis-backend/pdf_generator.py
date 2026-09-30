@@ -148,7 +148,7 @@ def generate_pdf_document(title: str, content: str, author: str = "Aisia Autonom
             elif line.startswith('> '):
                 quote = line[2:].strip()
                 formatted = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', quote)
-                story.append(Paragraph(f"📌 {formatted}", callout_style))
+                story.append(Paragraph(formatted, callout_style))
             elif line.startswith('---'):
                 story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#e2e8f0'), spaceBefore=8, spaceAfter=8))
             else:

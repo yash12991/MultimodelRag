@@ -49,30 +49,34 @@ function getLanguageFromFileName(filename: string): string {
 function getFileIcon(filename: string) {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
   if (['html', 'htm'].includes(ext)) {
-    return <span className="file-icon html" title="HTML">🌐</span>
+    return <span className="file-badge-tag html" title="HTML">HTML</span>
   }
   if (['css', 'scss'].includes(ext)) {
-    return <span className="file-icon css" title="CSS">🎨</span>
+    return <span className="file-badge-tag css" title="CSS">CSS</span>
   }
   if (['js', 'jsx'].includes(ext)) {
-    return <span className="file-icon js" title="JavaScript">⚡</span>
+    return <span className="file-badge-tag js" title="JavaScript">JS</span>
   }
   if (['ts', 'tsx'].includes(ext)) {
-    return <span className="file-icon ts" title="TypeScript">🔷</span>
+    return <span className="file-badge-tag ts" title="TypeScript">TS</span>
   }
   if (['json'].includes(ext)) {
-    return <span className="file-icon json" title="JSON">📦</span>
+    return <span className="file-badge-tag json" title="JSON">JSON</span>
   }
   if (['py'].includes(ext)) {
-    return <span className="file-icon py" title="Python">🐍</span>
+    return <span className="file-badge-tag py" title="Python">PY</span>
   }
   if (['svg'].includes(ext)) {
-    return <span className="file-icon svg" title="SVG">📐</span>
+    return <span className="file-badge-tag svg" title="SVG">SVG</span>
   }
   if (['mmd', 'mermaid'].includes(ext)) {
-    return <span className="file-icon mmd" title="Mermaid">📊</span>
+    return <span className="file-badge-tag mmd" title="Mermaid">MMD</span>
   }
-  return <span className="file-icon generic" title="File">📄</span>
+  return (
+    <span className="file-badge-tag generic" title="File">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </span>
+  )
 }
 
 export const CodingCanvas: React.FC<CodingCanvasProps> = ({
@@ -800,7 +804,9 @@ Please apply the requested modification to the project. If modifying existing fi
               {/* Inline Add File form in Tree */}
               {isAddingFile ? (
                 <form className="vscode-tree-add-form" onSubmit={handleAddNewFile}>
-                  <span className="vscode-tree-icon">📄</span>
+                  <span className="vscode-tree-icon">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </span>
                   <input
                     type="text"
                     autoFocus
@@ -1042,9 +1048,15 @@ Please apply the requested modification to the project. If modifying existing fi
 
             {gitHubPushResult ? (
               <div className={`github-result-card ${gitHubPushResult.success ? 'success' : 'error'}`}>
-                <div className="result-icon">{gitHubPushResult.success ? '🚀' : '⚠️'}</div>
+                <div className="result-icon">
+                  {gitHubPushResult.success ? (
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : (
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  )}
+                </div>
                 <div className="result-title">
-                  {gitHubPushResult.success ? 'Pushed Successfully!' : 'Push Failed'}
+                  {gitHubPushResult.success ? 'Pushed Successfully' : 'Push Failed'}
                 </div>
                 <p className="result-message">{gitHubPushResult.message}</p>
                 {gitHubPushResult.url && (
@@ -1117,7 +1129,7 @@ Please apply the requested modification to the project. If modifying existing fi
                       >
                         {gitHubRepos.map(r => (
                           <option key={r.full_name} value={r.full_name}>
-                            {r.name} {r.private ? '🔒' : '🌐'}
+                            {r.name} {r.private ? '(Private)' : '(Public)'}
                           </option>
                         ))}
                       </select>
@@ -1142,7 +1154,8 @@ Please apply the requested modification to the project. If modifying existing fi
                   <div className="github-chips-list">
                     {files.map(f => (
                       <span key={f.name} className="github-file-chip">
-                        📄 {f.name}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span>{f.name}</span>
                       </span>
                     ))}
                   </div>

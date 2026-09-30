@@ -4,6 +4,7 @@ import type { OrbThemeName } from 'orb-ui'
 import CodingCanvas, { type Artifact } from './CodingCanvas'
 import ChatMessageContent, { type PerplexitySource } from './components/ChatMessageContent'
 import { extractArtifactsFromText } from './utils/artifactParser'
+import { BrandLogo } from './components/BrandLogo'
 
 export interface ToolExecutionStep {
   id: string
@@ -98,21 +99,21 @@ const MODEL_OPTIONS = [
 ]
 
 const LANGUAGES = [
-  { code: 'en-US', name: 'English (US)', flag: '🇺🇸', label: 'EN' },
-  { code: 'hi-IN', name: 'Hindi (हिन्दी)', flag: '🇮🇳', label: 'HI' },
-  { code: 'mr-IN', name: 'Marathi (मराठी)', flag: '🇮🇳', label: 'MR' },
-  { code: 'es-ES', name: 'Spanish (Español)', flag: '🇪🇸', label: 'ES' },
-  { code: 'fr-FR', name: 'French (Français)', flag: '🇫🇷', label: 'FR' },
-  { code: 'de-DE', name: 'German (Deutsch)', flag: '🇩🇪', label: 'DE' },
-  { code: 'ja-JP', name: 'Japanese (日本語)', flag: '🇯🇵', label: 'JA' },
-  { code: 'zh-CN', name: 'Chinese (中文)', flag: '🇨🇳', label: 'ZH' },
-  { code: 'ar-SA', name: 'Arabic (العربية)', flag: '🇸🇦', label: 'AR' },
-  { code: 'ru-RU', name: 'Russian (Русский)', flag: '🇷🇺', label: 'RU' },
-  { code: 'pt-BR', name: 'Portuguese (Brasil)', flag: '🇧🇷', label: 'PT' },
-  { code: 'it-IT', name: 'Italian (Italiano)', flag: '🇮🇹', label: 'IT' },
-  { code: 'ta-IN', name: 'Tamil (தமிழ்)', flag: '🇮🇳', label: 'TA' },
-  { code: 'te-IN', name: 'Telugu (తెలుగు)', flag: '🇮🇳', label: 'TE' },
-  { code: 'bn-IN', name: 'Bengali (বাংলা)', flag: '🇮🇳', label: 'BN' },
+  { code: 'en-US', name: 'English (US)', flag: 'EN', label: 'EN' },
+  { code: 'hi-IN', name: 'Hindi (हिन्दी)', flag: 'HI', label: 'HI' },
+  { code: 'mr-IN', name: 'Marathi (मराठी)', flag: 'MR', label: 'MR' },
+  { code: 'es-ES', name: 'Spanish (Español)', flag: 'ES', label: 'ES' },
+  { code: 'fr-FR', name: 'French (Français)', flag: 'FR', label: 'FR' },
+  { code: 'de-DE', name: 'German (Deutsch)', flag: 'DE', label: 'DE' },
+  { code: 'ja-JP', name: 'Japanese (日本語)', flag: 'JA', label: 'JA' },
+  { code: 'zh-CN', name: 'Chinese (中文)', flag: 'ZH', label: 'ZH' },
+  { code: 'ar-SA', name: 'Arabic (العربية)', flag: 'AR', label: 'AR' },
+  { code: 'ru-RU', name: 'Russian (Русский)', flag: 'RU', label: 'RU' },
+  { code: 'pt-BR', name: 'Portuguese (Brasil)', flag: 'PT', label: 'PT' },
+  { code: 'it-IT', name: 'Italian (Italiano)', flag: 'IT', label: 'IT' },
+  { code: 'ta-IN', name: 'Tamil (தமிழ்)', flag: 'TA', label: 'TA' },
+  { code: 'te-IN', name: 'Telugu (తెలుగు)', flag: 'TE', label: 'TE' },
+  { code: 'bn-IN', name: 'Bengali (বাংলা)', flag: 'BN', label: 'BN' },
 ]
 
 export interface PersonaPreset {
@@ -134,7 +135,7 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
     name: 'Empathetic',
     subtitle: 'Warm, compassionate & reassuring',
     badge: 'Gentle & Calming',
-    icon: '💖',
+    icon: 'empathetic',
     desc: 'Validating emotional intelligence with an unhurried, soothing cadence and comforting reassurance.',
     defaultPitch: '+2Hz',
     defaultRate: '-5%',
@@ -146,7 +147,7 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
     name: 'Professional',
     subtitle: 'Crisp, structured & authoritative',
     badge: 'Executive Advisor',
-    icon: '💼',
+    icon: 'professional',
     desc: 'Clear executive delivery with structured organization, objective insights, and confident cadence.',
     defaultPitch: '+0Hz',
     defaultRate: '+0%',
@@ -158,7 +159,7 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
     name: 'Witty',
     subtitle: 'Playful, clever & charismatic',
     badge: 'Sharp Humor',
-    icon: '⚡',
+    icon: 'witty',
     desc: 'Lively pitch modulation, clever wordplay, and charismatic energy while remaining remarkably smart.',
     defaultPitch: '+6Hz',
     defaultRate: '+5%',
@@ -170,7 +171,7 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
     name: 'Concise',
     subtitle: 'Ultra-minimalist & high-density',
     badge: 'Zero Fluff',
-    icon: '🎯',
+    icon: 'concise',
     desc: 'Fast, efficient delivery without redundant pleasantries or filler. Immediate answers and key facts.',
     defaultPitch: '-2Hz',
     defaultRate: '+15%',
@@ -178,6 +179,27 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
     toneTags: ['Fast', 'Minimalist', 'Direct', 'Laser-focused']
   }
 ]
+
+function renderPersonaIcon(id: string) {
+  if (id === 'empathetic') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    )
+  }
+  if (id === 'professional') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    )
+  }
+  if (id === 'witty') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    )
+  }
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+  )
+}
 
 const DEFAULT_STOPWATCH_ARTIFACT: Artifact = {
   id: 'art-welcome',
@@ -196,21 +218,20 @@ const DEFAULT_STOPWATCH_ARTIFACT: Artifact = {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at top, #1a1b2f, #0b0c16);
+      background: #09090b;
       color: #fff;
     }
     .card {
-      background: rgba(255, 255, 255, 0.04);
+      background: #18181b;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(12px);
-      border-radius: 20px;
+      border-radius: 14px;
       padding: 32px;
       width: 340px;
       text-align: center;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
-    h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 6px; color: #a5b4fc; }
-    p { font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; }
+    h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 6px; color: #f4f4f5; }
+    p { font-size: 0.85rem; color: #a1a1aa; margin-bottom: 24px; }
     .display {
       font-size: 3.2rem;
       font-weight: 700;
@@ -218,24 +239,23 @@ const DEFAULT_STOPWATCH_ARTIFACT: Artifact = {
       font-family: monospace;
       color: #38bdf8;
       margin: 16px 0 24px 0;
-      text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
     }
     .btn-group { display: flex; gap: 10px; justify-content: center; }
     button {
       flex: 1;
       padding: 12px;
       border: none;
-      border-radius: 12px;
+      border-radius: 8px;
       font-weight: 600;
       font-size: 0.9rem;
       cursor: pointer;
       transition: all 0.2s ease;
     }
-    .btn-start { background: linear-gradient(135deg, #10b981, #059669); color: white; }
-    .btn-stop { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+    .btn-start { background: #10b981; color: white; }
+    .btn-stop { background: #ef4444; color: white; }
     .btn-reset { background: rgba(255, 255, 255, 0.1); color: #e2e8f0; }
-    button:hover { transform: translateY(-2px); opacity: 0.95; }
-    button:active { transform: translateY(0); }
+    button:hover { opacity: 0.92; }
+    button:active { transform: translateY(1px); }
   </style>
 </head>
 <body>
@@ -1032,22 +1052,19 @@ export default function App() {
 
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-    // Add user message
+    const userMsgId = `user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    const aisiaMsgId = `aisia-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+
+    // Atomically append both user message and assistant placeholder in a single state update
     setMessages(prev => [
       ...prev,
       {
-        id: String(Date.now()),
+        id: userMsgId,
         sender: 'user',
         text: textToSend,
         timestamp: timeStr,
         attachments: stagedAttachments.map(a => ({ name: a.name, mime: a.mime, data: a.data }))
-      }
-    ])
-
-    // Placeholder Aisia streaming message
-    const aisiaMsgId = String(Date.now() + 1)
-    setMessages(prev => [
-      ...prev,
+      },
       {
         id: aisiaMsgId,
         sender: 'aisia',
@@ -1452,7 +1469,7 @@ export default function App() {
       <aside className={`gpt-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <span className="brand-dot"></span>
+            <BrandLogo size={24} withContainer={true} />
             <span className="brand-title">Aisia</span>
             <span className="brand-version">v2.5</span>
           </div>
@@ -1540,13 +1557,24 @@ export default function App() {
         <header className="gpt-header">
           <div className="header-left">
             {!sidebarOpen && (
-              <button 
-                className="header-icon-btn sidebar-trigger" 
-                onClick={() => setSidebarOpen(true)}
-                title="Open sidebar"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
-              </button>
+              <>
+                <button 
+                  className="header-icon-btn sidebar-trigger" 
+                  onClick={() => setSidebarOpen(true)}
+                  title="Open sidebar"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+                </button>
+                <div 
+                  className="header-brand-collapsed" 
+                  onClick={() => setSidebarOpen(true)} 
+                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginRight: '6px' }} 
+                  title="Aisia Autonomous Agent"
+                >
+                  <BrandLogo size={22} withContainer={true} />
+                  <span className="brand-title" style={{ fontSize: '0.86rem', fontWeight: 600 }}>Aisia</span>
+                </div>
+              </>
             )}
 
             {/* Model Selector Dropdown */}
@@ -1597,7 +1625,9 @@ export default function App() {
                 onClick={() => setAgentMode('general')}
                 title="Quick Assistant with Notion, RAG, and Web access"
               >
-                <span className="mode-icon">⚡</span>
+                <span className="mode-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </span>
                 <span className="mode-label">Quick</span>
               </button>
               <button 
@@ -1606,7 +1636,9 @@ export default function App() {
                 onClick={() => setAgentMode('deep_research')}
                 title="Perplexity-style Deep Web Research with multi-source crawling and citations"
               >
-                <span className="mode-icon">🔬</span>
+                <span className="mode-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
                 <span className="mode-label">Research</span>
                 <span className="mode-badge pro-badge">Pro</span>
               </button>
@@ -1622,7 +1654,9 @@ export default function App() {
                 }}
                 title="Coding Agent with Live Artifacts Interactive Canvas"
               >
-                <span className="mode-icon">💻</span>
+                <span className="mode-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </span>
                 <span className="mode-label">Canvas</span>
                 <span className="mode-badge">Code</span>
               </button>
@@ -1638,7 +1672,9 @@ export default function App() {
                 onClick={() => setShowToolsMenu(prev => !prev)}
                 title="Tools, MCP Servers, Documents & Integrations"
               >
-                <span className="tools-sparkle-icon">⚡</span>
+                <span className="tools-sparkle-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </span>
                 <span>Tools</span>
                 <span className="header-count-bubble">{(mcpServers.length || 10) + documents.length}</span>
                 <svg 
@@ -1668,7 +1704,9 @@ export default function App() {
                     }}
                   >
                     <div className="tools-item-left">
-                      <span className="tools-item-icon">🔌</span>
+                      <span className="tools-item-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/></svg>
+                      </span>
                       <div className="tools-item-text">
                         <div className="tools-item-title">MCP Hub & Tools</div>
                         <div className="tools-item-sub">{mcpServers.length || 10} servers connected</div>
@@ -1686,7 +1724,9 @@ export default function App() {
                     }}
                   >
                     <div className="tools-item-left">
-                      <span className="tools-item-icon">📁</span>
+                      <span className="tools-item-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                      </span>
                       <div className="tools-item-text">
                         <div className="tools-item-title">Knowledge Files</div>
                         <div className="tools-item-sub">{documents.length} docs & transcripts</div>
@@ -1704,7 +1744,9 @@ export default function App() {
                     }}
                   >
                     <div className="tools-item-left">
-                      <span className="tools-item-icon">📝</span>
+                      <span className="tools-item-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                      </span>
                       <div className="tools-item-text">
                         <div className="tools-item-title">Notion Workspace</div>
                         <div className="tools-item-sub">Sprint board & notes</div>
@@ -1752,7 +1794,7 @@ export default function App() {
                 /* EMPTY STATE (ChatGPT / Claude style) */
                 <div className="gpt-empty-state">
                   <div className="empty-brand-icon">
-                    <div className="empty-sparkle-dot"></div>
+                    <BrandLogo size={36} withContainer={true} animated={true} />
                   </div>
                   {agentMode === 'deep_research' ? (
                     <>
@@ -1765,7 +1807,7 @@ export default function App() {
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Compare viscous dampers vs tuned mass dampers in structural engineering")}
                         >
-                          <span className="starter-title">🔬 Structural Damping Comparison</span>
+                          <span className="starter-title">Structural Damping Comparison</span>
                           <span className="starter-desc">In-depth seismic & wind vibration control analysis with academic citations</span>
                         </button>
 
@@ -1773,7 +1815,7 @@ export default function App() {
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Conduct an in-depth market and technology analysis of solid-state EV batteries in 2026")}
                         >
-                          <span className="starter-title">🔋 Solid-State Battery Analysis</span>
+                          <span className="starter-title">Solid-State Battery Analysis</span>
                           <span className="starter-desc">Energy density metrics, commercialization timelines, and top manufacturers</span>
                         </button>
 
@@ -1781,7 +1823,7 @@ export default function App() {
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Deep research autonomous AI agent frameworks in 2026 and save a summary brief to my Notion workspace")}
                         >
-                          <span className="starter-title">⚡ Multi-Action: Research & Sync to Notion</span>
+                          <span className="starter-title">Multi-Action: Research & Sync to Notion</span>
                           <span className="starter-desc">Autonomous web crawl + structured brief automatically created in your workspace</span>
                         </button>
 
@@ -1789,7 +1831,7 @@ export default function App() {
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Investigate the latest architectural strategies for base isolation in earthquake zones")}
                         >
-                          <span className="starter-title">🏛️ Seismic Base Isolation Review</span>
+                          <span className="starter-title">Seismic Base Isolation Review</span>
                           <span className="starter-desc">Lead rubber bearings, friction pendulums, and global building codes</span>
                         </button>
                       </div>
@@ -1805,7 +1847,7 @@ export default function App() {
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Create a modern interactive Stopwatch web app with millisecond timer, lap records, and neon glassmorphism UI")}
                         >
-                          <span className="starter-title">⏱️ Stopwatch Web App</span>
+                          <span className="starter-title">Stopwatch Web App</span>
                           <span className="starter-desc">Live interactive timer with start/pause/reset and lap recording</span>
                         </button>
 
@@ -1813,15 +1855,15 @@ export default function App() {
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Build an interactive 3D Glassmorphic Pricing Card in HTML/CSS with monthly/annual billing switch and hover glow")}
                         >
-                          <span className="starter-title">💎 Glassmorphic Pricing UI</span>
-                          <span className="starter-desc">Clean modern component with animated toggle and gradient borders</span>
+                          <span className="starter-title">Pricing Component UI</span>
+                          <span className="starter-desc">Clean modern component with animated billing toggle and sleek styling</span>
                         </button>
 
                         <button 
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Generate a complete Mermaid architecture diagram for a Distributed Real-time AI Agent system")}
                         >
-                          <span className="starter-title">📐 Architecture Diagram</span>
+                          <span className="starter-title">Architecture Diagram</span>
                           <span className="starter-desc">Mermaid flowchart showing Frontend, FastAPI, Redis, and LLM nodes</span>
                         </button>
 
@@ -1829,7 +1871,7 @@ export default function App() {
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Create an interactive Pomodoro Focus Timer web app with 25-minute countdown, audio alerts, and task progress bar")}
                         >
-                          <span className="starter-title">🍅 Pomodoro Productivity App</span>
+                          <span className="starter-title">Pomodoro Productivity App</span>
                           <span className="starter-desc">Interactive circular progress bar, sound synthesis, and state machine</span>
                         </button>
                       </div>
@@ -1883,8 +1925,8 @@ export default function App() {
                     <div key={msg.id} className={`message-row ${msg.sender}`}>
                       <div className="message-wrapper">
                         {msg.sender === 'aisia' && (
-                          <div className="message-avatar aisia-avatar">
-                            <span className="avatar-letter">A</span>
+                          <div className="message-avatar aisia-avatar" title="Aisia Autonomous Agent">
+                            <BrandLogo size={18} />
                           </div>
                         )}
 
@@ -1983,7 +2025,10 @@ export default function App() {
                     {att.mime.startsWith('image/') ? (
                       <img src={att.data} alt={att.name} className="staged-thumb" />
                     ) : (
-                      <div className="staged-file-badge">📄 {att.name}</div>
+                      <div className="staged-file-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span>{att.name}</span>
+                      </div>
                     )}
                     <button className="staged-remove-btn" onClick={() => removeAttachment(idx)}>×</button>
                   </div>
@@ -2040,7 +2085,6 @@ export default function App() {
                     onClick={() => setShowLangMenu(!showLangMenu)}
                     title={`Active Language: ${LANGUAGES.find(l => l.code === speechLang)?.name}`}
                   >
-                    <span className="lang-flag">{LANGUAGES.find(l => l.code === speechLang)?.flag}</span>
                     <span className="lang-code">{LANGUAGES.find(l => l.code === speechLang)?.label}</span>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
                   </button>
@@ -2061,7 +2105,7 @@ export default function App() {
                               }
                             }}
                           >
-                            <span className="opt-flag">{l.flag}</span>
+                            <span className="opt-lang-tag">{l.label}</span>
                             <span className="opt-name">{l.name}</span>
                             {l.code === speechLang && <span className="opt-check">✓</span>}
                           </div>
@@ -2136,7 +2180,7 @@ export default function App() {
         <div className={`voice-call-overlay ${isInCallChatOpen ? 'chat-open' : ''}`}>
           <div className="voice-call-topbar">
             <div className="voice-call-pill">
-              <span className="live-pulse-dot"></span>
+              <BrandLogo size={16} />
               <span>Gemini Live Neural Voice</span>
             </div>
 
@@ -2221,7 +2265,9 @@ export default function App() {
               <div className="voice-call-chat-drawer">
                 <div className="in-call-drawer-header">
                   <div className="drawer-header-left">
-                    <span className="drawer-icon">💬</span>
+                    <span className="drawer-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </span>
                     <div>
                       <div className="drawer-title">Quiet Messaging Mode</div>
                       <div className="drawer-sub">Type your request if you can't talk aloud</div>
@@ -2241,7 +2287,9 @@ export default function App() {
                 <div className="in-call-drawer-history">
                   {messages.length === 0 ? (
                     <div className="drawer-empty-state">
-                      <div className="drawer-empty-icon">🤫</div>
+                      <div className="drawer-empty-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      </div>
                       <div className="drawer-empty-bold">In a quiet room or meeting?</div>
                       <div className="drawer-empty-text">
                         Type your message below. Aisia will process and reply instantly in real-time without leaving your call.
@@ -2406,7 +2454,9 @@ export default function App() {
                   className={`settings-nav-item ${settingsTab === 'voice' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('voice')}
                 >
-                  <span className="nav-item-icon">🎙️</span>
+                  <span className="nav-item-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">Voice & Visualizer</span>
                     <span className="nav-item-sub">Neural voice & orb theme</span>
@@ -2418,7 +2468,9 @@ export default function App() {
                   className={`settings-nav-item ${settingsTab === 'persona' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('persona')}
                 >
-                  <span className="nav-item-icon">🎭</span>
+                  <span className="nav-item-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">Persona & Emotion</span>
                     <span className="nav-item-sub">Cadence, tone & pitch</span>
@@ -2430,7 +2482,9 @@ export default function App() {
                   className={`settings-nav-item ${settingsTab === 'memory' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('memory')}
                 >
-                  <span className="nav-item-icon">🧠</span>
+                  <span className="nav-item-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                  </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">Autonomous Memory</span>
                     <span className="nav-item-sub">{savedMemories.length} facts remembered</span>
@@ -2442,7 +2496,9 @@ export default function App() {
                   className={`settings-nav-item ${settingsTab === 'integrations' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('integrations')}
                 >
-                  <span className="nav-item-icon">🔌</span>
+                  <span className="nav-item-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/></svg>
+                  </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">MCP Hub & Tools</span>
                     <span className="nav-item-sub">{mcpServers.length || 10} servers active</span>
@@ -2454,7 +2510,9 @@ export default function App() {
                   className={`settings-nav-item ${settingsTab === 'system' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('system')}
                 >
-                  <span className="nav-item-icon">⚡</span>
+                  <span className="nav-item-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">Engine & System</span>
                     <span className="nav-item-sub">Latency & diagnostics</span>
@@ -2601,7 +2659,7 @@ export default function App() {
                             >
                               <div className="persona-card-header">
                                 <div className="persona-card-identity">
-                                  <span className="persona-icon">{preset.icon}</span>
+                                  <span className="persona-icon">{renderPersonaIcon(preset.id)}</span>
                                   <span className="persona-name">{preset.name}</span>
                                 </div>
                                 <span className="persona-badge">{preset.badge}</span>
@@ -2983,7 +3041,9 @@ export default function App() {
                             <div key={server.id} className={`mcp-server-card ${isExpanded ? 'expanded' : ''}`}>
                               <div className="mcp-server-header" onClick={() => setExpandedMcpId(isExpanded ? null : server.id)}>
                                 <div className="mcp-server-left">
-                                  <span className="mcp-server-icon">{server.icon || '🔌'}</span>
+                                  <span className="mcp-server-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/></svg>
+                                  </span>
                                   <div className="mcp-server-info">
                                     <div className="mcp-server-name-row">
                                       <span className="mcp-server-name">{server.name}</span>
@@ -3056,7 +3116,7 @@ export default function App() {
                                                 </>
                                               ) : (
                                                 <>
-                                                  <span>⚡ Test Tool</span>
+                                                  <span>Test Tool</span>
                                                 </>
                                               )}
                                             </button>
@@ -3101,7 +3161,9 @@ export default function App() {
                     <div className="system-telemetry-grid">
                       <div className="system-card">
                         <div className="sys-card-top">
-                          <span className="sys-icon">🧠</span>
+                          <span className="sys-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                          </span>
                           <span className="sys-status live">Active</span>
                         </div>
                         <div className="sys-title">Primary AI Engine</div>
@@ -3111,7 +3173,9 @@ export default function App() {
 
                       <div className="system-card">
                         <div className="sys-card-top">
-                          <span className="sys-icon">🎙️</span>
+                          <span className="sys-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                          </span>
                           <span className="sys-status live">{latencyHud}</span>
                         </div>
                         <div className="sys-title">Neural TTS Engine</div>
@@ -3121,7 +3185,9 @@ export default function App() {
 
                       <div className="system-card">
                         <div className="sys-card-top">
-                          <span className="sys-icon">🗄️</span>
+                          <span className="sys-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                          </span>
                           <span className="sys-status live">Connected</span>
                         </div>
                         <div className="sys-title">Persistent Database</div>
@@ -3131,7 +3197,9 @@ export default function App() {
 
                       <div className="system-card">
                         <div className="sys-card-top">
-                          <span className="sys-icon">📚</span>
+                          <span className="sys-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                          </span>
                           <span className="sys-status live">{documents.length} Docs</span>
                         </div>
                         <div className="sys-title">Dense Vector Store</div>
@@ -3193,7 +3261,9 @@ export default function App() {
               <div className="notion-pages-list">
                 {notionPages.map((p, i) => (
                   <div key={i} className="notion-page-card">
-                    <span className="page-icon">📄</span>
+                    <span className="page-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </span>
                     <span className="page-title">{p.title || 'Untitled'}</span>
                     <span className="page-type">{p.type}</span>
                   </div>
@@ -3210,7 +3280,7 @@ export default function App() {
           <div className="modal-dialog modal-dialog-lg" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.25rem' }}>📂</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                 <span>Universal Multimodal Knowledge Hub</span>
               </div>
               <button className="modal-close" onClick={() => setActiveModal('none')}>×</button>
@@ -3237,9 +3307,9 @@ export default function App() {
                     : 'Click or drop files to ingest into Vector Knowledge Base'}
                 </div>
                 <div className="upload-badges-row">
-                  <span className="upload-badge pdf-badge">📑 PDF (Tables & Diagrams)</span>
-                  <span className="upload-badge audio-badge">🎙️ Audio / Meetings (Verbatim & Actions)</span>
-                  <span className="upload-badge video-badge">🎬 Video (Scene-by-Scene Index)</span>
+                  <span className="upload-badge pdf-badge">PDF (Tables & Diagrams)</span>
+                  <span className="upload-badge audio-badge">Audio / Meetings (Verbatim & Actions)</span>
+                  <span className="upload-badge video-badge">Video (Scene-by-Scene Index)</span>
                 </div>
               </div>
 
@@ -3251,7 +3321,9 @@ export default function App() {
               <div className="files-list">
                 {documents.length === 0 ? (
                   <div className="files-empty-state">
-                    <span className="empty-icon">📁</span>
+                    <span className="empty-icon">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    </span>
                     <p>No knowledge documents ingested yet.</p>
                     <small>Upload PDF reports, audio recordings, or videos to expand Aisia's long-term intelligence.</small>
                   </div>
@@ -3259,7 +3331,9 @@ export default function App() {
                   documents.map((doc, idx) => (
                     <div key={idx} className="file-item-card multimodal-item-card">
                       <div className="file-item-left">
-                        <span className="file-icon-badge">{doc.icon || '📄'}</span>
+                        <span className="file-icon-badge">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </span>
                         <div className="file-details">
                           <div className="file-title-row">
                             <span className="file-name" title={doc.name}>{doc.name}</span>
@@ -3275,7 +3349,9 @@ export default function App() {
                           </div>
                           {doc.summary && (
                             <div className="file-summary-preview">
-                              <span className="sparkle-icon">✨</span>
+                              <span className="sparkle-icon">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+                              </span>
                               <span className="summary-text">{doc.summary}</span>
                             </div>
                           )}
@@ -3317,7 +3393,7 @@ export default function App() {
           <div className="modal-dialog transcript-dialog" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>📜</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 <span className="transcript-title-text">{selectedDocTranscript.name}</span>
                 <span className="transcript-tag">Multimodal Ingestion</span>
               </div>
@@ -3330,7 +3406,7 @@ export default function App() {
                     setTimeout(() => setCopiedTranscript(false), 2000)
                   }}
                 >
-                  {copiedTranscript ? '✓ Copied!' : '📋 Copy All'}
+                  {copiedTranscript ? 'Copied' : 'Copy All'}
                 </button>
                 <button className="modal-close" onClick={() => setSelectedDocTranscript(null)}>×</button>
               </div>
