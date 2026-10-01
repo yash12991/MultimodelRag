@@ -44,6 +44,8 @@ jarvis-rag/jarvis-frontend/node_modules/
 *.sqlite3
 chroma_db/
 chromadb/
+jarvis-rag/jarvis-backend/generated_pdfs/
+generated_pdfs/
 
 # OS artifacts
 .DS_Store

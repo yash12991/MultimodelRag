@@ -294,7 +294,7 @@ def delete_document(filename: str):
         return {"status": "deleted", "filename": filename, "remaining_chunks": chunks}
     raise HTTPException(status_code=404, detail="File not found")
 
-@app.get("/pdf/download/{filename}")
+@app.api_route("/pdf/download/{filename}", methods=["GET", "HEAD"])
 def download_pdf_endpoint(filename: str):
     import pdf_generator
     safe_name = os.path.basename(filename)
@@ -303,13 +303,17 @@ def download_pdf_endpoint(filename: str):
         return FileResponse(file_path, media_type="application/pdf", filename=safe_name)
     raise HTTPException(status_code=404, detail="PDF not found")
 
-@app.get("/pdf/view/{filename}")
+@app.api_route("/pdf/view/{filename}", methods=["GET", "HEAD"])
 def view_pdf_endpoint(filename: str):
     import pdf_generator
     safe_name = os.path.basename(filename)
     file_path = os.path.join(pdf_generator.PDF_DIR, safe_name)
     if os.path.exists(file_path):
-        return FileResponse(file_path, media_type="application/pdf")
+        return FileResponse(
+            file_path, 
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename=\"{safe_name}\""}
+        )
     raise HTTPException(status_code=404, detail="PDF not found")
 
 class PDFGenerateRequest(BaseModel):
@@ -323,6 +327,70 @@ def generate_pdf_endpoint(req: PDFGenerateRequest):
     result = pdf_generator.generate_pdf_document(title=req.title, content=req.content, author=req.author or "Aisia Autonomous AI")
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "Failed to generate PDF"))
+    return result
+
+@app.api_route("/image/download/{filename}", methods=["GET", "HEAD"])
+def download_image_endpoint(filename: str):
+    import image_generator
+    safe_name = os.path.basename(filename)
+    file_path = os.path.join(image_generator.IMAGE_DIR, safe_name)
+    if os.path.exists(file_path):
+        if safe_name.endswith(".svg"):
+            media_type = "image/svg+xml"
+        elif safe_name.endswith(".jpg") or safe_name.endswith(".jpeg"):
+            media_type = "image/jpeg"
+        elif safe_name.endswith(".webp"):
+            media_type = "image/webp"
+        else:
+            media_type = "image/png"
+        return FileResponse(file_path, media_type=media_type, filename=safe_name)
+    raise HTTPException(status_code=404, detail="Image not found")
+
+@app.api_route("/image/view/{filename}", methods=["GET", "HEAD"])
+def view_image_endpoint(filename: str):
+    import image_generator
+    safe_name = os.path.basename(filename)
+    file_path = os.path.join(image_generator.IMAGE_DIR, safe_name)
+    if os.path.exists(file_path):
+        if safe_name.endswith(".svg"):
+            media_type = "image/svg+xml"
+        elif safe_name.endswith(".jpg") or safe_name.endswith(".jpeg"):
+            media_type = "image/jpeg"
+        elif safe_name.endswith(".webp"):
+            media_type = "image/webp"
+        else:
+            media_type = "image/png"
+        return FileResponse(
+            file_path, 
+            media_type=media_type,
+            headers={"Content-Disposition": f"inline; filename=\"{safe_name}\""}
+        )
+    raise HTTPException(status_code=404, detail="Image not found")
+
+class ImageGenerateRequest(BaseModel):
+    prompt: str
+    style: Optional[str] = "cinematic"
+    aspect_ratio: Optional[str] = "1:1"
+
+@app.post("/image/generate")
+def generate_image_endpoint(req: ImageGenerateRequest):
+    import image_generator
+    result = image_generator.generate_image(prompt=req.prompt, style=req.style or "cinematic", aspect_ratio=req.aspect_ratio or "1:1")
+    if not result.get("success"):
+        raise HTTPException(status_code=500, detail=result.get("error", "Failed to generate image"))
+    return result
+
+class ImageEditRequest(BaseModel):
+    image: str  # Base64 data URI, raw base64, file path, or URL
+    prompt: str
+    model: Optional[str] = "black-forest-labs/flux.1-kontext-pro"
+
+@app.post("/image/edit")
+def edit_image_endpoint(req: ImageEditRequest):
+    import image_generator
+    result = image_generator.edit_image(image_input=req.image, prompt=req.prompt, model=req.model or "black-forest-labs/flux.1-kontext-pro")
+    if not result.get("success"):
+        raise HTTPException(status_code=500, detail=result.get("error", "Failed to edit image"))
     return result
 
 @app.get("/system/status")

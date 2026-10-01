@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import JSZip from 'jszip'
 
 export interface ProjectFile {
   name: string
@@ -119,9 +120,23 @@ export const CodingCanvas: React.FC<CodingCanvasProps> = ({
   // Visual render state
   const [mermaidSvg, setMermaidSvg] = useState<string>('')
   const [mermaidError, setMermaidError] = useState<string>('')
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false)
+  const exportMenuRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const recognitionRef = useRef<any>(null)
   const silenceTimerRef = useRef<any>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setIsExportMenuOpen(false)
+      }
+    }
+    if (isExportMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isExportMenuOpen])
 
   const openGitHubModal = async () => {
     setIsGitHubModalOpen(true)
@@ -227,7 +242,7 @@ export const CodingCanvas: React.FC<CodingCanvasProps> = ({
       setFiles(initialFiles)
       const selected = artifact.activeFileName && initialFiles.some(f => f.name === artifact.activeFileName)
         ? artifact.activeFileName
-        : (initialFiles.find(f => f.name.endsWith('.html'))?.name || initialFiles[0]?.name || 'index.html')
+        : (initialFiles.find(f => f.name === 'index.html')?.name || initialFiles.find(f => f.name.endsWith('.html'))?.name || initialFiles[0]?.name || 'index.html')
       setActiveFileName(selected)
 
       // Default to preview tab for HTML, SVG, and Mermaid
@@ -239,7 +254,24 @@ export const CodingCanvas: React.FC<CodingCanvasProps> = ({
         setActiveTab('code')
       }
     }
-  }, [artifact?.id, artifact?.title])
+  }, [artifact?.id, artifact?.title, artifact?.files, artifact?.activeFileName])
+
+  // Listen for multi-page site navigation events (<a href="about.html">) from preview iframe
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === 'AISIA_NAVIGATE_PAGE' && e.data.filename) {
+        const target = e.data.filename
+        const fileExists = files.some(f => f.name.toLowerCase() === target.toLowerCase())
+        if (fileExists) {
+          const matched = files.find(f => f.name.toLowerCase() === target.toLowerCase())!
+          setActiveFileName(matched.name)
+          setActiveTab('preview')
+        }
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [files])
 
   // Get active file object
   const activeFile = files.find(f => f.name === activeFileName) || files[0] || {
@@ -495,6 +527,28 @@ Please apply the requested modification to the project. If modifying existing fi
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleDownloadZip = async () => {
+    try {
+      const zip = new JSZip()
+      files.forEach(f => {
+        zip.file(f.name, f.content)
+      })
+      const blob = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${(artifact?.title || 'project').replace(/\s+/g, '_').toLowerCase()}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Failed to create ZIP:', err)
+      alert('Could not export ZIP. Falling back to HTML bundle.')
+      handleDownloadBundle()
+    }
+  }
+
   const handleDownloadBundle = () => {
     // If multi-file with HTML, package everything into a self-contained HTML bundle
     if (isHtmlCapable) {
@@ -503,7 +557,7 @@ Please apply the requested modification to the project. If modifying existing fi
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${artifact.title.replace(/\s+/g, '_').toLowerCase()}_bundle.html`
+      a.download = `${(artifact?.title || 'project').replace(/\s+/g, '_').toLowerCase()}_bundle.html`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -522,24 +576,55 @@ Please apply the requested modification to the project. If modifying existing fi
     }
   }
 
+  const handlePrintPdf = () => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.focus()
+        iframeRef.current.contentWindow.print()
+      } catch (err) {
+        console.warn('Iframe print failed, opening print window:', err)
+        const printWindow = window.open('', '_blank')
+        if (printWindow) {
+          printWindow.document.write(getHtmlSrcDoc())
+          printWindow.document.close()
+          printWindow.focus()
+          setTimeout(() => {
+            printWindow.print()
+            printWindow.close()
+          }, 350)
+        }
+      }
+    }
+  }
+
   const handleRunCode = () => {
     if (iframeRef.current && isHtmlCapable) {
       iframeRef.current.srcdoc = getHtmlSrcDoc()
     }
   }
 
-  // Compile multi-file source doc (bundles HTML + CSS + JS in real-time)
-  const getHtmlSrcDoc = () => {
-    // 1. Locate primary HTML file
-    const htmlFile = files.find(f => f.name.endsWith('.html') || f.language === 'html') || files[0]
+  // Compile multi-file source doc (bundles HTML + CSS + JS + Assets + Router in real-time)
+  const getHtmlSrcDoc = (targetHtmlName?: string) => {
+    // 1. Locate HTML file to render
+    const currentName = targetHtmlName || activeFileName
+    let htmlFile = files.find(f => f.name === currentName && (f.name.endsWith('.html') || f.language === 'html'))
+    
+    // If active file is not an HTML file, prefer index.html or the first HTML file
+    if (!htmlFile) {
+      htmlFile = files.find(f => f.name === 'index.html') ||
+                 files.find(f => f.name.endsWith('.html') || f.language === 'html') ||
+                 files[0]
+    }
+
     let baseHtml = htmlFile ? htmlFile.content : ''
 
     if (!baseHtml.includes('<!DOCTYPE html>') && !baseHtml.includes('<html')) {
       baseHtml = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>${artifact?.title || 'Interactive Canvas'}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 16px; background: #09090b; color: #f4f4f5; }
   </style>
@@ -550,37 +635,147 @@ Please apply the requested modification to the project. If modifying existing fi
 </html>`
     }
 
-    // 2. Inline all CSS files into <head>
-    const cssFiles = files.filter(f => f.name !== htmlFile?.name && (f.name.endsWith('.css') || f.language === 'css'))
-    const inlinedStyles = cssFiles.map(css => 
-      `\n  <style data-filename="${css.name}">\n${css.content}\n  </style>`
-    ).join('')
+    // Map of all project files for fast, case-insensitive lookup
+    const fileMap = new Map<string, ProjectFile>()
+    files.forEach(f => {
+      fileMap.set(f.name.toLowerCase(), f)
+      fileMap.set(f.name.toLowerCase().replace(/^\.\//, ''), f)
+    })
 
-    // 3. Inline all JS/TS files before </body>
-    const jsFiles = files.filter(f => f.name !== htmlFile?.name && (
-      f.name.endsWith('.js') || f.name.endsWith('.ts') || 
-      f.language === 'javascript' || f.language === 'typescript'
-    ))
-    const inlinedScripts = jsFiles.map(js => 
-      `\n  <script data-filename="${js.name}">\n${js.content}\n  </script>`
-    ).join('')
+    // 2. Resolve & inline <link rel="stylesheet" href="..."> tags
+    const injectedCssFiles = new Set<string>()
 
-    // Inject styles before </head> or at beginning
-    if (inlinedStyles) {
+    baseHtml = baseHtml.replace(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/gi, (match) => {
+      const hrefMatch = match.match(/href=["']([^"']+)["']/i)
+      if (hrefMatch && hrefMatch[1]) {
+        const rawHref = hrefMatch[1].trim()
+        // If it's an external CDN link, preserve it!
+        if (rawHref.startsWith('http://') || rawHref.startsWith('https://') || rawHref.startsWith('//')) {
+          return match
+        }
+        const cleanHref = rawHref.replace(/^\.\//, '').toLowerCase()
+        let matched = fileMap.get(cleanHref)
+        if (!matched && (cleanHref.endsWith('.css') || cleanHref.includes('style'))) {
+          matched = files.find(f => f.name.endsWith('.css') || f.language === 'css')
+        }
+        if (matched) {
+          injectedCssFiles.add(matched.name)
+          return `<style data-filename="${matched.name}">\n${matched.content}\n</style>`
+        }
+      }
+      return '' // eliminate 404 broken stylesheet link
+    })
+
+    // Also inject any remaining CSS files not explicitly linked in the HTML
+    const remainingCss = files.filter(f => 
+      (f.name.endsWith('.css') || f.language === 'css') && 
+      !injectedCssFiles.has(f.name)
+    )
+    if (remainingCss.length > 0) {
+      const extraStyles = remainingCss.map(css => 
+        `\n  <style data-filename="${css.name}">\n${css.content}\n  </style>`
+      ).join('')
       if (baseHtml.includes('</head>')) {
-        baseHtml = baseHtml.replace('</head>', `${inlinedStyles}\n</head>`)
+        baseHtml = baseHtml.replace('</head>', `${extraStyles}\n</head>`)
       } else {
-        baseHtml = `${inlinedStyles}\n${baseHtml}`
+        baseHtml = `${extraStyles}\n${baseHtml}`
       }
     }
 
-    // Inject scripts before </body> or at end
-    if (inlinedScripts) {
-      if (baseHtml.includes('</body>')) {
-        baseHtml = baseHtml.replace('</body>', `${inlinedScripts}\n</body>`)
-      } else {
-        baseHtml = `${baseHtml}\n${inlinedScripts}`
+    // 3. Resolve & inline <script src="..."> tags
+    const injectedJsFiles = new Set<string>()
+
+    baseHtml = baseHtml.replace(/<script\s+[^>]*src=["']([^"']+)["'][^>]*>\s*<\/script>/gi, (match, src) => {
+      const rawSrc = (src || '').trim()
+      if (rawSrc.startsWith('http://') || rawSrc.startsWith('https://') || rawSrc.startsWith('//')) {
+        return match // preserve external CDN libraries like three.js, d3, etc.
       }
+      const cleanSrc = rawSrc.replace(/^\.\//, '').toLowerCase()
+      let matched = fileMap.get(cleanSrc)
+      if (!matched && (cleanSrc.endsWith('.js') || cleanSrc.endsWith('.ts') || cleanSrc.includes('script') || cleanSrc.includes('app'))) {
+        matched = files.find(f => f.name.endsWith('.js') || f.name.endsWith('.ts') || f.language === 'javascript' || f.language === 'typescript')
+      }
+      if (matched) {
+        injectedJsFiles.add(matched.name)
+        return `<script data-filename="${matched.name}">\n${matched.content}\n</script>`
+      }
+      return '' // eliminate 404 broken script link
+    })
+
+    // Also inject any remaining JS/TS files not explicitly linked
+    const remainingJs = files.filter(f => 
+      f.name !== htmlFile?.name && 
+      (f.name.endsWith('.js') || f.name.endsWith('.ts') || f.language === 'javascript' || f.language === 'typescript') &&
+      !injectedJsFiles.has(f.name)
+    )
+    if (remainingJs.length > 0) {
+      const extraScripts = remainingJs.map(js => 
+        `\n  <script data-filename="${js.name}">\n${js.content}\n  </script>`
+      ).join('')
+      if (baseHtml.includes('</body>')) {
+        baseHtml = baseHtml.replace('</body>', `${extraScripts}\n</body>`)
+      } else {
+        baseHtml = `${baseHtml}\n${extraScripts}`
+      }
+    }
+
+    // 4. Resolve local SVG image assets: <img src="logo.svg">
+    files.filter(f => f.name.endsWith('.svg') || f.language === 'svg').forEach(svg => {
+      const encoded = `data:image/svg+xml;utf8,${encodeURIComponent(svg.content)}`
+      const escapedName = svg.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`(src=["'])(\\./)?${escapedName}(["'])`, 'gi')
+      baseHtml = baseHtml.replace(regex, `$1${encoded}$3`)
+    })
+
+    // 5. Inject Virtual Filesystem (for mock fetch on local data.json) & Client Router (for <a href="about.html">)
+    const virtualFilesMap: Record<string, { name: string; content: string; language: string }> = {}
+    files.forEach(f => {
+      virtualFilesMap[f.name.toLowerCase()] = { name: f.name, content: f.content, language: f.language }
+    })
+
+    const runtimeScript = `
+<script id="aisia-multi-file-runtime">
+(function() {
+  var virtualFiles = ${JSON.stringify(virtualFilesMap)};
+
+  // Intercept fetch for local mock files (JSON, CSV, SVG, TXT)
+  var _origFetch = window.fetch;
+  window.fetch = function(input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+    var clean = url.replace(/^\\.\\//, '').replace(/^https?:\\/\\/[^\\/]+\\//, '').split('?')[0].split('#')[0].toLowerCase();
+    if (virtualFiles[clean]) {
+      var f = virtualFiles[clean];
+      var mime = clean.endsWith('.json') ? 'application/json' : (clean.endsWith('.svg') ? 'image/svg+xml' : 'text/plain');
+      return Promise.resolve(new Response(f.content, {
+        status: 200,
+        headers: { 'Content-Type': mime }
+      }));
+    }
+    return _origFetch ? _origFetch.apply(this, arguments) : Promise.reject('fetch unavailable');
+  };
+
+  // Intercept relative page navigation (<a href="about.html">, <a href="./contact.html">)
+  document.addEventListener('click', function(e) {
+    var target = e.target.closest('a');
+    if (!target) return;
+    var href = target.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+    if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')) return;
+
+    var cleanHref = href.replace(/^\\.\\//, '').split('#')[0].split('?')[0].toLowerCase();
+    if (virtualFiles[cleanHref]) {
+      e.preventDefault();
+      window.parent.postMessage({ type: 'AISIA_NAVIGATE_PAGE', filename: virtualFiles[cleanHref].name }, '*');
+    }
+  }, true);
+})();
+</script>
+`
+
+    if (baseHtml.includes('</body>')) {
+      baseHtml = baseHtml.replace('</body>', `${runtimeScript}\n</body>`)
+    } else {
+      baseHtml = `${baseHtml}\n${runtimeScript}`
     }
 
     return baseHtml
@@ -598,9 +793,9 @@ Please apply the requested modification to the project. If modifying existing fi
             </svg>
           </div>
           <div className="canvas-title-group">
-            <span className="canvas-title">{artifact.title}</span>
+            <span className="canvas-title" title={artifact.title}>{artifact.title}</span>
             <span className="canvas-lang-badge">
-              {files.length > 1 ? `MULTI-FILE (${files.length})` : (activeFile.language || 'CODE').toUpperCase()}
+              {files.length > 1 ? `${files.length} files` : (activeFile.language || 'CODE').toUpperCase()}
             </span>
           </div>
         </div>
@@ -620,7 +815,7 @@ Please apply the requested modification to the project. If modifying existing fi
               onClick={() => setActiveTab('code')}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-              <span>Files & Code</span>
+              <span>Code</span>
             </button>
           </div>
         )}
@@ -633,43 +828,30 @@ Please apply the requested modification to the project. If modifying existing fi
               onClick={() => setDeviceView('desktop')}
               title="Desktop View"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             </button>
             <button 
               className={`device-btn ${deviceView === 'tablet' ? 'active' : ''}`}
               onClick={() => setDeviceView('tablet')}
               title="Tablet View (768px)"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
             </button>
             <button 
               className={`device-btn ${deviceView === 'mobile' ? 'active' : ''}`}
               onClick={() => setDeviceView('mobile')}
               title="Mobile View (375px)"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
             </button>
           </div>
         )}
 
-        {/* Action Controls */}
+        {/* Streamlined Clean Header Actions */}
         <div className="canvas-header-right">
-          {/* Quick Voice Modification Trigger in Header */}
-          <button 
-            className={`canvas-icon-btn voice-header-btn ${isListening ? 'active-voice' : ''}`} 
-            onClick={toggleSpeechRecognition}
-            title={isListening ? "Stop voice listening" : "Modify page with your voice"}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="22"/>
-            </svg>
-          </button>
-
           {isPreviewable && (
             <button className="canvas-icon-btn" onClick={handleRunCode} title="Refresh / Run Live Preview">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
           )}
 
@@ -677,53 +859,122 @@ Please apply the requested modification to the project. If modifying existing fi
             {copied ? (
               <span className="copied-text">✓ Copied</span>
             ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             )}
           </button>
 
+          {/* Consolidated Export Dropdown */}
+          <div className="canvas-export-wrapper" ref={exportMenuRef}>
+            <button 
+              type="button" 
+              className={`canvas-export-btn ${isExportMenuOpen ? 'active' : ''}`}
+              onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+              title="Export, download or push code"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Export</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: isExportMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+
+            {isExportMenuOpen && (
+              <div className="canvas-export-dropdown">
+                {files.length > 1 && (
+                  <button 
+                    type="button"
+                    className="export-dropdown-item" 
+                    onClick={() => { handleDownloadZip(); setIsExportMenuOpen(false); }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    <div>
+                      <div className="export-item-title">Download ZIP</div>
+                      <div className="export-item-desc">All {files.length} project files</div>
+                    </div>
+                  </button>
+                )}
+
+                <button 
+                  type="button"
+                  className="export-dropdown-item" 
+                  onClick={() => { handleDownloadBundle(); setIsExportMenuOpen(false); }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <div>
+                    <div className="export-item-title">Download {files.length > 1 ? 'Bundle HTML' : activeFile.name}</div>
+                    <div className="export-item-desc">Single runnable file</div>
+                  </div>
+                </button>
+
+                <button 
+                  type="button"
+                  className="export-dropdown-item" 
+                  onClick={() => { openGitHubModal(); setIsExportMenuOpen(false); }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                  </svg>
+                  <div>
+                    <div className="export-item-title">Push to GitHub</div>
+                    <div className="export-item-desc">Commit directly to repository</div>
+                  </div>
+                </button>
+
+                {isHtmlCapable && (
+                  <button 
+                    type="button"
+                    className="export-dropdown-item" 
+                    onClick={() => { handlePrintPdf(); setIsExportMenuOpen(false); }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="6 9 6 2 18 2 18 9"/>
+                      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                      <rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    <div>
+                      <div className="export-item-title">Print / Save as PDF</div>
+                      <div className="export-item-desc">Document print rendering</div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="canvas-header-divider" />
+
+          {/* Explorer Sidebar Toggle */}
           <button 
-            className="canvas-icon-btn github-header-btn" 
-            onClick={openGitHubModal} 
-            title="Push to GitHub"
+            className={`canvas-icon-btn ${isSidebarOpen ? 'active-tool' : ''}`}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            title={isSidebarOpen ? "Hide File Explorer" : "Show File Explorer"}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
             </svg>
           </button>
 
-          <button 
-            className="canvas-icon-btn" 
-            onClick={handleDownloadBundle} 
-            title={files.length > 1 ? "Download Bundled Project HTML" : `Download ${activeFile.name}`}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          </button>
-
+          {/* Fullscreen */}
           <button 
             className="canvas-icon-btn" 
             onClick={() => setIsFullscreen(!isFullscreen)} 
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Canvas"}
           >
             {isFullscreen ? (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
             ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             )}
           </button>
 
+          {/* Close */}
           <button className="canvas-icon-btn close-btn" onClick={onClose} title="Close Canvas">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-          {/* Explorer Sidebar Toggle */}
-          <button 
-            className={`canvas-icon-btn ${isSidebarOpen ? 'active-tool' : ''}`}
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            title={isSidebarOpen ? "Hide File Explorer (Sidebar)" : "Show File Explorer (Sidebar)"}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <line x1="9" y1="3" x2="9" y2="21"/>
-            </svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
       </header>
@@ -917,6 +1168,7 @@ Please apply the requested modification to the project. If modifying existing fi
                       title={artifact.title}
                       srcDoc={getHtmlSrcDoc()}
                       sandbox="allow-scripts allow-modals allow-forms allow-same-origin"
+                      allow="autoplay; speech-synthesis; fullscreen"
                       className="preview-iframe"
                     />
                   </div>

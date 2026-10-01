@@ -1,0 +1,279 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="30%" r="70%" fx="50%" fy="20%">
+      <stop offset="0%" stop-color="#14243a" />
+      <stop offset="50%" stop-color="#0a121e" />
+      <stop offset="100%" stop-color="#03060a" />
+    </radialGradient>
+
+    <!-- Glowing Blue Eye Gradient -->
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="25%" stop-color="#7df9ff" />
+      <stop offset="60%" stop-color="#00bfff" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#0044ff" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Iris Gradient -->
+    <radialGradient id="irisGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#dffffa" />
+      <stop offset="40%" stop-color="#00e5ff" />
+      <stop offset="85%" stop-color="#0066cc" />
+      <stop offset="100%" stop-color="#002266" />
+    </radialGradient>
+
+    <!-- Fur Shading Gradients -->
+    <linearGradient id="whiteFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="60%" stop-color="#e2ebf5" />
+      <stop offset="100%" stop-color="#b8cadc" />
+    </linearGradient>
+
+    <linearGradient id="highlightFur" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#d0e2ff" stop-opacity="0.2" />
+    </linearGradient>
+
+    <!-- Filters for Glow and Shadows -->
+    <filter id="superGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="blur1" />
+      <feGaussianBlur stdDeviation="24" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+
+    <!-- Snowflakes -->
+    <g id="snowflake">
+      <circle cx="0" cy="0" r="2.5" fill="#fff" filter="url(#softGlow)"/>
+    </g>
+    <g id="snowflakeBig">
+      <circle cx="0" cy="0" r="4" fill="#e0f7ff" filter="url(#softGlow)"/>
+      <path d="M-6 0 H6 M0 -6 V6" stroke="#fff" stroke-width="1" opacity="0.8"/>
+    </g>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)" />
+
+  <!-- Atmospheric Background Elements (Soft distant bokeh / winter forest hints) -->
+  <g opacity="0.15">
+    <path d="M0 1000 L150 600 L300 1000 Z" fill="#4a6984" />
+    <path d="M200 1000 L400 500 L600 1000 Z" fill="#354f67" />
+    <path d="M500 1000 L750 450 L1000 1000 Z" fill="#2a3f54" />
+    <path d="M700 1000 L850 550 L1000 1000 Z" fill="#4a6984" />
+  </g>
+
+  <!-- Ambient Backlight (Moonlight Rim) -->
+  <circle cx="500" cy="200" r="350" fill="#00bfff" opacity="0.08" filter="url(#superGlow)" />
+  <circle cx="500" cy="400" r="200" fill="#7df9ff" opacity="0.05" filter="url(#superGlow)" />
+
+  <!-- TIGER ILLUSTRATION START -->
+  <g id="majesticTiger" filter="url(#dropShadow)">
+    
+    <!-- Body and Shoulders Base -->
+    <path d="M 200 1000 L 250 720 C 280 620, 380 580, 500 580 C 620 580, 720 620, 750 720 L 800 1000 Z" fill="url(#whiteFur)" />
+    
+    <!-- Chest Fur Tufts -->
+    <path d="M 300 750 Q 350 820 380 880 Q 440 800 500 850 Q 560 800 620 880 Q 650 820 700 750 Q 600 780 500 760 Q 400 780 300 750 Z" fill="url(#whiteFur)" />
+
+    <!-- Neck & Mane Base -->
+    <path d="M 320 620 C 320 520, 380 440, 500 440 C 620 440, 680 520, 680 620 C 720 660, 760 700, 760 700 C 760 700, 650 650, 500 650 C 350 650, 240 700, 240 700 C 240 700, 280 660, 320 620 Z" fill="url(#whiteFur)" />
+
+    <!-- Shoulders Dark Stripes (Subtle greyish-blue/charcoal for white tiger) -->
+    <g fill="#2c3a4a" opacity="0.75">
+      <!-- Left shoulder stripes -->
+      <path d="M 270 750 C 290 730, 310 760, 330 730 C 310 780, 290 790, 260 770 Z" />
+      <path d="M 310 680 C 330 660, 350 690, 370 660 C 350 720, 330 730, 300 710 Z" />
+      <path d="M 350 600 C 370 590, 390 620, 410 590 C 390 640, 370 650, 340 630 Z" />
+      <!-- Right shoulder stripes -->
+      <path d="M 730 750 C 710 730, 690 760, 670 730 C 690 780, 710 790, 740 770 Z" />
+      <path d="M 690 680 C 670 660, 650 690, 630 660 C 650 720, 670 730, 700 710 Z" />
+      <path d="M 650 600 C 630 590, 610 620, 590 590 C 610 640, 630 650, 660 630 Z" />
+    </g>
+
+    <!-- Head Shape -->
+    <path d="M 330 460 C 330 330, 400 280, 500 280 C 600 280, 670 330, 670 460 C 670 560, 620 620, 500 620 C 380 620, 330 560, 330 460 Z" fill="url(#whiteFur)" />
+
+    <!-- Jaw and Muzzle Area -->
+    <path d="M 380 500 C 380 500, 430 620, 500 620 C 570 620, 620 500, 620 500 C 620 500, 580 590, 500 590 C 420 590, 380 500, 380 500 Z" fill="#ffffff" />
+    <path d="M 420 520 Q 500 600 580 520 Q 500 560 420 520 Z" fill="#eaf2fb" />
+
+    <!-- Ears -->
+    <!-- Left Ear -->
+    <path d="M 350 310 C 320 280, 300 220, 320 180 C 340 150, 380 180, 390 230 C 400 270, 380 300, 350 310 Z" fill="url(#whiteFur)" />
+    <path d="M 345 280 C 330 250, 325 210, 335 190 C 345 180, 360 195, 365 220 C 370 250, 360 270, 345 280 Z" fill="#2c3a4a" opacity="0.85" />
+    <path d="M 350 260 C 345 240, 340 215, 348 200 C 352 205, 355 225, 355 245 Z" fill="#ffffff" opacity="0.9" />
+
+    <!-- Right Ear -->
+    <path d="M 650 310 C 680 280, 700 220, 680 180 C 660 150, 620 180, 610 230 C 600 270, 620 300, 650 310 Z" fill="url(#whiteFur)" />
+    <path d="M 655 280 C 670 250, 675 210, 665 190 C 655 180, 640 195, 635 220 C 630 250, 640 270, 655 280 Z" fill="#2c3a4a" opacity="0.85" />
+    <path d="M 650 260 C 655 240, 660 215, 652 200 C 648 205, 645 225, 645 245 Z" fill="#ffffff" opacity="0.9" />
+
+    <!-- Majestic Head Stripes (Charcoal/Dark Blue-Grey) -->
+    <g fill="#1f2d3d">
+      <!-- Forehead Chevron Stripes -->
+      <path d="M 500 260 C 470 290, 440 270, 420 290 C 450 310, 480 300, 500 320 C 520 300, 550 310, 580 290 C 560 270, 530 290, 500 260 Z" />
+      <path d="M 500 325 C 475 350, 450 330, 435 350 C 460 370, 480 360, 500 380 C 520 360, 540 370, 565 350 C 550 330, 525 350, 500 325 Z" />
+      
+      <!-- Center Forehead Vertical Stripe ("Wang" King mark stylized) -->
+      <path d="M 490 350 L 510 350 L 505 410 L 495 410 Z" />
+
+      <!-- Eyebrow & Temple Stripes (Left) -->
+      <path d="M 390 360 C 370 380, 350 360, 340 390 C 370 410, 390 390, 410 370 Z" />
+      <path d="M 360 410 C 350 430, 340 430, 335 460 C 360 460, 375 440, 380 420 Z" />
+      <path d="M 355 480 C 345 490, 345 510, 355 520 C 365 510, 375 495, 365 485 Z" />
+
+      <!-- Eyebrow & Temple Stripes (Right) -->
+      <path d="M 610 360 C 630 380, 650 360, 660 390 C 630 410, 610 390, 590 370 Z" />
+      <path d="M 640 410 C 650 430, 660 430, 665 460 C 640 460, 625 440, 620 420 Z" />
+      <path d="M 645 480 C 655 490, 655 510, 645 520 C 635 510, 625 495, 635 485 Z" />
+
+      <!-- Cheek Stripes -->
+      <path d="M 365 550 C 350 565, 360 590, 380 595 C 385 580, 375 560, 365 550 Z" />
+      <path d="M 390 590 C 380 610, 400 625, 420 620 C 415 605, 400 595, 390 590 Z" />
+      
+      <path d="M 635 550 C 650 565, 640 590, 620 595 C 615 580, 625 560, 635 550 Z" />
+      <path d="M 610 590 C 620 610, 600 625, 580 620 C 585 605, 600 595, 610 590 Z" />
+    </g>
+
+    <!-- Eyes Socket Shadows / Depth -->
+    <path d="M 410 435 C 430 415, 470 415, 490 435 C 470 450, 430 450, 410 435 Z" fill="#141d26" opacity="0.7"/>
+    <path d="M 590 435 C 570 415, 530 415, 510 435 C 530 450, 570 450, 590 435 Z" fill="#141d26" opacity="0.7"/>
+
+    <!-- Eyelids & Dramatic Eyelashes -->
+    <path d="M 405 435 C 430 405, 470 405, 495 435 C 470 425, 430 425, 405 435 Z" fill="#1f2d3d" />
+    <path d="M 595 435 C 570 405, 530 405, 505 435 C 530 425, 570 425, 595 435 Z" fill="#1f2d3d" />
+    <path d="M 415 440 C 435 455, 465 455, 485 440 C 465 448, 435 448, 415 440 Z" fill="#1f2d3d" />
+    <path d="M 585 440 C 565 455, 535 455, 515 440 C 535 448, 565 448, 585 440 Z" fill="#1f2d3d" />
+
+    <!-- GLOWING CRYSTAL BLUE EYES (THE FOCAL POINT) -->
+    <!-- Outer Glow -->
+    <circle cx="450" cy="435" r="30" fill="url(#eyeGlow)" filter="url(#superGlow)" />
+    <circle cx="550" cy="435" r="30" fill="url(#eyeGlow)" filter="url(#superGlow)" />
+
+    <!-- Eyeball Base (Left) -->
+    <ellipse cx="450" cy="435" rx="22" ry="14" fill="#001122" />
+    <!-- Eyeball Base (Right) -->
+    <ellipse cx="550" cy="435" rx="22" ry="14" fill="#001122" />
+
+    <!-- Iris (Left) -->
+    <ellipse cx="450" cy="435" rx="16" ry="12" fill="url(#irisGrad)" filter="url(#softGlow)" />
+    <!-- Iris (Right) -->
+    <ellipse cx="550" cy="435" rx="16" ry="12" fill="url(#irisGrad)" filter="url(#softGlow)" />
+
+    <!-- Glowing Pupil Slits (Left) -->
+    <ellipse cx="450" cy="435" rx="4" ry="11" fill="#00091a" />
+    <ellipse cx="450" cy="435" rx="2" ry="9" fill="#ffffff" filter="url(#superGlow)" />
+
+    <!-- Glowing Pupil Slits (Right) -->
+    <ellipse cx="550" cy="435" rx="4" ry="11" fill="#00091a" />
+    <ellipse cx="550" cy="435" rx="2" ry="9" fill="#ffffff" filter="url(#superGlow)" />
+
+    <!-- Eye Highlights / Sparkles -->
+    <circle cx="442" cy="429" r="4" fill="#ffffff" filter="url(#softGlow)" />
+    <circle cx="456" cy="441" r="1.5" fill="#ffffff" />
+
+    <circle cx="542" cy="429" r="4" fill="#ffffff" filter="url(#softGlow)" />
+    <circle cx="556" cy="441" r="1.5" fill="#ffffff" />
+
+    <!-- Nose Bridge & Nose -->
+    <path d="M 480 435 L 520 435 L 515 500 L 485 500 Z" fill="url(#whiteFur)" />
+    <!-- Pink/Grey Realistic Tiger Nose -->
+    <path d="M 478 500 C 478 490, 522 490, 522 500 C 525 515, 510 530, 500 530 C 490 530, 475 515, 478 500 Z" fill="#36282b" />
+    <path d="M 485 503 C 485 498, 515 498, 515 503 C 516 510, 510 520, 500 520 C 490 520, 484 510, 485 503 Z" fill="#ff8da1" filter="url(#softGlow)" opacity="0.8" />
+    <!-- Nostrils -->
+    <ellipse cx="491" cy="510" rx="3" ry="2" fill="#201114" />
+    <ellipse cx="509" cy="510" rx="3" ry="2" fill="#201114" />
+    <path d="M 500 520 L 500 545" stroke="#2b3b4c" stroke-width="2.5" stroke-linecap="round" />
+
+    <!-- Mouth Line & Whisker Pads -->
+    <path d="M 460 545 Q 500 565 540 545" fill="none" stroke="#1f2d3d" stroke-width="3" stroke-linecap="round" />
+    <path d="M 500 545 L 500 555" stroke="#1f2d3d" stroke-width="2.5" />
+
+    <!-- Whiskers (Left & Right) -->
+    <g stroke="#e2ebf5" stroke-width="1.2" opacity="0.7" fill="none">
+      <!-- Left Whiskers -->
+      <path d="M 460 530 Q 380 520 310 500" />
+      <path d="M 465 540 Q 385 545 320 535" />
+      <path d="M 460 550 Q 380 570 315 575" />
+      
+      <!-- Right Whiskers -->
+      <path d="M 540 530 Q 620 520 690 500" />
+      <path d="M 535 540 Q 615 545 680 535" />
+      <path d="M 540 550 Q 620 570 685 575" />
+    </g>
+
+    <!-- Frost / Snow Highlights on Head -->
+    <path d="M 370 290 Q 380 270 395 285" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" filter="url(#softGlow)" />
+    <path d="M 610 285 Q 625 270 635 290" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" filter="url(#softGlow)" />
+    <path d="M 490 270 Q 500 255 510 270" stroke="#ffffff" stroke-width="4" stroke-linecap="round" fill="none" filter="url(#softGlow)" />
+    <path d="M 440 370 Q 450 360 460 375" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" fill="none" filter="url(#softGlow)" />
+    <path d="M 540 370 Q 550 360 560 375" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" fill="none" filter="url(#softGlow)" />
+
+  </g>
+  <!-- TIGER ILLUSTRATION END -->
+
+  <!-- FOREGROUND SNOW STORM & PARTICLES -->
+  <g id="snowflakes">
+    <!-- Tiny distant snow -->
+    <use href="#snowflake" x="100" y="150" opacity="0.6"/>
+    <use href="#snowflake" x="250" y="80" opacity="0.4"/>
+    <use href="#snowflake" x="400" y="200" opacity="0.8"/>
+    <use href="#snowflake" x="650" y="120" opacity="0.5"/>
+    <use href="#snowflake" x="850" y="220" opacity="0.7"/>
+    <use href="#snowflake" x="900" y="80" opacity="0.3"/>
+    <use href="#snowflake" x="150" y="450" opacity="0.5"/>
+    <use href="#snowflake" x="80" y="700" opacity="0.4"/>
+    <use href="#snowflake" x="920" y="650" opacity="0.6"/>
+    <use href="#snowflake" x="880" y="850" opacity="0.8"/>
+    <use href="#snowflake" x="120" y="900" opacity="0.5"/>
+
+    <!-- Medium snow -->
+    <use href="#snowflakeBig" x="200" y="300" opacity="0.8"/>
+    <use href="#snowflakeBig" x="750" y="280" opacity="0.9"/>
+    <use href="#snowflakeBig" x="320" y="450" opacity="0.7"/>
+    <use href="#snowflakeBig" x="680" y="520" opacity="0.8"/>
+    <use href="#snowflakeBig" x="180" y="650" opacity="0.6"/>
+    <use href="#snowflakeBig" x="820" y="720" opacity="0.9"/>
+    <use href="#snowflakeBig" x="450" y="850" opacity="0.7"/>
+    <use href="#snowflakeBig" x="250" y="920" opacity="0.8"/>
+
+    <!-- Close dramatic blurred snowflakes (Depth of Field) -->
+    <circle cx="80" cy="180" r="8" fill="#aeefff" filter="url(#superGlow)" opacity="0.5"/>
+    <circle cx="920" cy="150" r="10" fill="#aeefff" filter="url(#superGlow)" opacity="0.4"/>
+    <circle cx="150" cy="550" r="12" fill="#7df9ff" filter="url(#superGlow)" opacity="0.6"/>
+    <circle cx="880" cy="480" r="9" fill="#7df9ff" filter="url(#superGlow)" opacity="0.5"/>
+    <circle cx="350" cy="780" r="14" fill="#aeefff" filter="url(#superGlow)" opacity="0.4"/>
+    <circle cx="700" cy="880" r="11" fill="#7df9ff" filter="url(#superGlow)" opacity="0.6"/>
+    
+    <!-- Snow dust swirling around face -->
+    <path d="M 380 400 Q 420 420 440 390" stroke="#fff" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.7" filter="url(#softGlow)"/>
+    <path d="M 620 400 Q 580 420 560 390" stroke="#fff" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.7" filter="url(#softGlow)"/>
+    <path d="M 430 460 Q 400 480 420 500" stroke="#fff" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6" filter="url(#softGlow)"/>
+    <path d="M 570 460 Q 600 480 580 500" stroke="#fff" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6" filter="url(#softGlow)"/>
+  </g>
+
+  <!-- Vignette / Cinematic Frame Overlay -->
+  <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+    <stop offset="60%" stop-color="#000000" stop-opacity="0" />
+    <stop offset="100%" stop-color="#010308" stop-opacity="0.85" />
+  </radialGradient>
+  <rect width="1000" height="1000" fill="url(#vignette)" pointer-events="none" />
+
+</svg>

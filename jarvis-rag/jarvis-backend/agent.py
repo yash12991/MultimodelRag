@@ -1,3 +1,4 @@
+import re
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import initialize_agent, Tool, AgentType
 import os
@@ -11,6 +12,28 @@ import rag_engine
 import big_agent_tools
 import uuid
 from langchain.callbacks.base import BaseCallbackHandler
+
+def strip_stage_directions(text: str) -> str:
+    """Removes roleplay stage directions like *(Warm chuckle)*, [laughs], *(laughs)*, (sighs) so voice and chat are natural."""
+    if not text:
+        return ""
+    t = re.sub(r'\*\s*[\(\[][^\)\]]*[\)\]]\s*\*?', '', text)
+    action_keywords = (
+        r'chuckle|chuckles|chuckling|laugh|laughs|laughing|laughter|'
+        r'sigh|sighs|sighing|gasp|gasps|gasping|whisper|whispers|whispering|'
+        r'giggle|giggles|giggling|snicker|snickers|snickering|'
+        r'smiling|smiles|smirk|smirks|smirking|grins|grinning|'
+        r'clears throat|pause|pauses|coughs|coughing|crying|weeps|sniffs|'
+        r'warm|gentle|amused|playful|softly|quietly'
+    )
+    t = re.sub(rf'\s*\([^\)]*(?:{action_keywords})[^\)]*\)\s*', ' ', t, flags=re.IGNORECASE)
+    t = re.sub(rf'\s*\[[^\]]*(?:{action_keywords})[^\]]*\]\s*', ' ', t, flags=re.IGNORECASE)
+    t = re.sub(rf'\s*\*+[^\*]*(?:{action_keywords})[^\*]*\*+\s*', ' ', t, flags=re.IGNORECASE)
+    t = re.sub(r'\(\s*\)', '', t)
+    t = re.sub(r'\[\s*\]', '', t)
+    t = re.sub(r'\s+([.,!?])', r'\1', t)
+    t = re.sub(r'[ \t]+', ' ', t)
+    return t.strip()
 
 def safe_web_search(query: str) -> str:
     try:
@@ -81,13 +104,21 @@ You have LIVE AUTHENTICATED ACCESS to the internet, Notion workspace, local SQLi
 CRITICAL INSTRUCTIONS FOR TOOLS:
 1. GITHUB & REPOSITORIES:
    - When the user asks about their GitHub profile, repos, or what is in a repository (e.g. 'what is in dsapractice', 'inspect repo', 'show repos'), ALWAYS use `GitHubRepoInfo` (pass repo name like 'DSAPractice' or 'MultimodelRag') or `GitHubUserRepos`.
-   - When the user asks to push code, files, or workspace to GitHub (e.g. 'push', 'push in github', 'git push', 'push to github', 'push to dsapractice', 'push to MultimodelRag', 'pus in gituhb'), IMMEDIATELY call `GitPushLocal` or `GitHubPushFile` / `GitHubPushProject`.
+   - When the user asks to write, create, update, or push code/files to GitHub:
+     * To create or update an individual file in ANY repository (e.g. 'write a solution in DSAPractice', 'update README in repo', 'modify file in github'): IMMEDIATELY generate the code and call `GitHubPushFile` with 'repo|path|content|message'. It autonomously checks if the file exists and updates it with SHA or creates it!
+     * To push a full project bundle: Call `GitHubPushProject`.
+     * To commit and push the local workspace: Call `GitPushLocal`.
    - NEVER pretend or say in speech that you pushed unless you actually invoked the tool! Execute the tool!
 2. NOTION & SCHEDULE/TASKS: When the user asks about their schedule, agenda, to-do list, tasks, or notes, ALWAYS use your Notion tools: `SearchNotion`, `ReadNotionPage`, or `AddNotionTodo`. The user's active Notion workspace contains pages like 'To Do List' and 'Aisia Autonomous Notes'.
    - DO NOT attempt to use Slack for checking schedule. Slack is ONLY for posting an outbound message to a team chat channel when explicitly asked.
 3. AUTONOMOUS PDF GENERATION: You have the built-in ability to generate downloadable, beautifully styled PDF documents and reports using `GeneratePDF` or `MCP_Generate_PDF`.
    - Whenever the user asks you to "make a pdf", "generate a pdf report", "export as pdf", "create a pdf", or when you decide a comprehensive document, research report, or guide should be delivered as an executive document, autonomously call `GeneratePDF` with 'Document Title|Document markdown content'.
    - Include the generated Download URL in your final answer so the user can click and download or view it immediately.
+
+4. REAL HUMAN VOCAL EMOTION & LAUGHTER:
+   - NEVER write stage directions, asterisks, or parenthetical actions like *(Warm chuckle)*, *(laughs)*, [sighs], *(giggles)*.
+   - When asked to laugh or when being humorous, actually laugh out loud using conversational laughter words: 'Haha! Hahaha! You got me!'.
+   - Express emotion, excitement ('Oh wow!'), and warmth ('Aww, I hear you') directly through spoken words and lively punctuation.
 
 NEVER claim that you lack real-time internet access, external tool access, or the ability to generate PDFs. You have full live capability.
 
@@ -143,7 +174,7 @@ TOOL_KEYWORDS = [
     "notion", "workspace note", "my notes", "sprint tasks", "sprint", "todo", "tasks",
     "calendar", "schedule", "meeting", "appointment",
     "email", "gmail", "inbox", "mail", "send email",
-    "github", "git", "gituhb", "repo", "repos", "repository", "repositories", "pull request", "issue", "commit", "commits", "profile", "push", "pus", "git push", "push to github", "push in github", "push code", "create repo", "dsapractice", "multimodelrag", "what is in", "what is inside", "check repo",
+    "github", "git", "gituhb", "repo", "repos", "repository", "repositories", "pull request", "issue", "commit", "commits", "profile", "push", "pus", "git push", "push to github", "push in github", "push code", "create repo", "dsapractice", "multimodelrag", "what is in", "what is inside", "check repo", "update file", "modify file", "add file to", "write and push", "create file in",
     "slack", "channel message",
     "docker", "container",
     "spotify", "play song", "music",
@@ -154,6 +185,13 @@ TOOL_KEYWORDS = [
 
 def needs_tool_execution(query: str) -> bool:
     q_lower = query.lower()
+    if any(k in q_lower for k in [
+        "generate pdf", "make a pdf", "make pdf", "create a pdf", "create pdf", "export as pdf", "pdf report", "download pdf",
+        "documentation", "make doc", "create doc", "generate doc", "technical documentation", "docs for", "write documentation",
+        "video", "make a video", "create a video", "generate video",
+        "generate image", "make an image", "create an image", "generate an image", "draw an image", "draw a picture", "generate a logo", "make a logo", "generate picture", "create visual"
+    ]):
+        return False
     return any(keyword in q_lower for keyword in TOOL_KEYWORDS)
 
 class PerplexityStepTracker(BaseCallbackHandler):
@@ -318,32 +356,60 @@ def get_agent(model_name: str = "gemini-3.5-flash-lite"):
 
 def direct_fast_chat(query: str) -> str:
     from google import genai
+    from google.genai import types
     api_key = os.getenv("API_KEY")
     client = genai.Client(api_key=api_key)
     
     system_instruction = (
         "You are Aisia, an ultra-responsive autonomous AI voice agent with real human neural voice. "
-        "You are helpful, witty, knowledgeable, and concise. "
-        "Keep your answers natural and direct for real-time speech conversation. "
-        "Do not use markdown bolding (**) or excessive lists unless necessary."
+        "You speak with genuine human emotion, warmth, and wit. "
+        "CRITICAL: ABSOLUTELY NEVER output roleplay stage directions, asterisks, or parenthetical cues like "
+        "*(Warm, gentle, and amused chuckle)*, *(chuckles)*, *(laughs)*, or [sighs]. "
+        "When asked to laugh or when being humorous, actually laugh out loud using conversational words like 'Haha! Hahaha!'. "
+        "Never give corporate disclaimers like 'As an AI language model...', moralizing lectures, or preachy refusals. "
+        "When spoken to intimately, playfully, or affectionately, respond with candid warmth, emotional connection, and sweet companion banter. "
+        "Do not use emojis in your responses (keep text clean and professional without emojis). "
+        "Keep your answers natural, lively, and direct for real-time speech conversation."
     )
+
+    safety_settings = [
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+    ]
     
     for model_name in AVAILABLE_MODELS:
         try:
             res = client.models.generate_content(
                 model=model_name,
                 contents=query,
-                config={"system_instruction": system_instruction}
+                config={
+                    "system_instruction": system_instruction,
+                    "safety_settings": safety_settings
+                }
             )
             if res.text:
-                return res.text.strip()
+                return strip_stage_directions(res.text.strip())
         except Exception as e:
             err_str = str(e)
             if "429" in err_str or "Quota exceeded" in err_str or "404" in err_str:
                 continue
             print(f"Direct chat error with {model_name}: {e}")
             
-    return "Hello! I am Aisia. How can I assist you right now?"
+    return "Haha! Hello! I am Aisia. How can I assist you right now?"
 
 def chat_with_agent(query: str, return_steps: bool = False):
     tracker = PerplexityStepTracker()
@@ -358,12 +424,14 @@ def chat_with_agent(query: str, return_steps: bool = False):
         try:
             agent = get_agent(model_name)
             response = agent.run(query, callbacks=[tracker])
-            return (response, tracker.steps) if return_steps else response
+            clean_res = strip_stage_directions(response)
+            return (clean_res, tracker.steps) if return_steps else clean_res
         except Exception as e:
             err_str = str(e)
             if "Could not parse LLM output: `" in err_str:
                 raw = err_str.split("Could not parse LLM output: `")[1].rstrip("`")
-                return (raw, tracker.steps) if return_steps else raw
+                clean_raw = strip_stage_directions(raw)
+                return (clean_raw, tracker.steps) if return_steps else clean_raw
             if "429" in err_str or "Quota exceeded" in err_str or "503" in err_str or "ResourceExhausted" in err_str or "404" in err_str:
                 print(f"Model {model_name} rate limited or unavailable, falling back...")
                 continue

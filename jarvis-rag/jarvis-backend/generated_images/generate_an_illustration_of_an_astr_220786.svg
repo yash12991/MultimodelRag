@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="100%" height="100%">
+ <defs>
+ <!-- Sky & Atmosphere Gradients -->
+ <linearGradient id="marsSky" x1="0%" y1="0%" x2="0%" y2="100%">
+ <stop offset="0%" stop-color="#120806" />
+ <stop offset="40%" stop-color="#4a150c" />
+ <stop offset="75%" stop-color="#b84223" />
+ <stop offset="100%" stop-color="#f57c3e" />
+ </linearGradient>
+
+ <!-- Sun Gradient -->
+ <radialGradient id="marsSun" cx="50%" cy="50%" r="50%">
+ <stop offset="0%" stop-color="#fff5e6" />
+ <stop offset="30%" stop-color="#ffb347" />
+ <stop offset="70%" stop-color="#ff5722" stop-opacity="0.8" />
+ <stop offset="100%" stop-color="#b84223" stop-opacity="0" />
+ </radialGradient>
+
+ <!-- Terrain Gradients -->
+ <linearGradient id="duneBack" x1="0%" y1="0%" x2="100%" y2="0%">
+ <stop offset="0%" stop-color="#5c1d13" />
+ <stop offset="50%" stop-color="#8c2e1b" />
+ <stop offset="100%" stop-color="#4a150c" />
+ </linearGradient>
+
+ <linearGradient id="duneMid" x1="0%" y1="0%" x2="0%" y2="100%">
+ <stop offset="0%" stop-color="#bd4024" />
+ <stop offset="100%" stop-color="#732110" />
+ </linearGradient>
+
+ <linearGradient id="duneFore" x1="0%" y1="0%" x2="100%" y2="100%">
+ <stop offset="0%" stop-color="#e05a36" />
+ <stop offset="50%" stop-color="#b84223" />
+ <stop offset="100%" stop-color="#611a0d" />
+ </linearGradient>
+
+ <!-- Suit & Helmet Gradients -->
+ <linearGradient id="visorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+ <stop offset="0%" stop-color="#ffcc00" />
+ <stop offset="30%" stop-color="#ff6600" />
+ <stop offset="70%" stop-color="#991a00" />
+ <stop offset="100%" stop-color="#330a00" />
+ </linearGradient>
+
+ <linearGradient id="suitWhite" x1="0%" y1="0%" x2="100%" y2="100%">
+ <stop offset="0%" stop-color="#ffffff" />
+ <stop offset="70%" stop-color="#d1d5db" />
+ <stop offset="100%" stop-color="#9ca3af" />
+ </linearGradient>
+
+ <linearGradient id="goldTrim" x1="0%" y1="0%" x2="100%" y2="0%">
+ <stop offset="0%" stop-color="#f59e0b" />
+ <stop offset="50%" stop-color="#fbbf24" />
+ <stop offset="100%" stop-color="#d97706" />
+ </linearGradient>
+
+ <!-- Glow & Shadow Filters -->
+ <filter id="atmosphericGlow" x="-20%" y="-20%" width="140%" height="140%">
+ <feGaussianBlur stdDeviation="15" result="blur" />
+ <feComposite in="SourceGraphic" in2="blur" operator="over" />
+ </filter>
+
+ <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+ <feDropShadow dx="0" dy="15" stdDeviation="10" flood-color="#000000" flood-opacity="0.6"/>
+ </filter>
+ </defs>
+
+ <!-- BACKGROUND SKY -->
+ <rect width="1200" height="800" fill="url(#marsSky)" />
+
+ <!-- STARS -->
+ <g fill="#ffffff" opacity="0.6">
+ <circle cx="150" cy="80" r="1.5" />
+ <circle cx="320" cy="50" r="1" />
+ <circle cx="580" cy="110" r="1.5" />
+ <circle cx="750" cy="65" r="2" opacity="0.9" />
+ <circle cx="950" cy="90" r="1" />
+ <circle cx="1100" cy="130" r="1.5" />
+ <circle cx="230" cy="160" r="1" />
+ <circle cx="450" cy="140" r="1.5" />
+ </g>
+
+ <!-- DISTANT SUN -->
+ <circle cx="850" cy="220" r="80" fill="url(#marsSun)" filter="url(#atmosphericGlow)" opacity="0.85" />
+ <circle cx="850" cy="220" r="35" fill="#fffaf0" />
+
+ <!-- DISTANT CRAGS / MOUNTAINS -->
+ <path d="M0 480 L180 380 L340 430 L520 350 L710 440 L880 360 L1040 420 L1200 370 L1200 800 L0 800 Z" fill="url(#duneBack)" />
+
+ <!-- MIDGROUND DUNES -->
+ <path d="M0 550 Q 300 460, 650 520 T 1200 480 L 1200 800 L 0 800 Z" fill="url(#duneMid)" />
+
+ <!-- FOREGROUND DUNES & ROCKS -->
+ <path d="M-50 680 Q 350 570, 750 640 T 1250 600 L 1250 800 L -50 800 Z" fill="url(#duneFore)" filter="url(#dropShadow)" />
+
+ <!-- RANDOM MARTIAN ROCKS -->
+ <ellipse cx="250" cy="690" rx="25" ry="12" fill="#4a150c" />
+ <ellipse cx="280" cy="685" rx="15" ry="8" fill="#732110" />
+ <ellipse cx="980" cy="720" rx="35" ry="15" fill="#4a150c" />
+ <polygon points="940,730 960,710 990,725" fill="#360f08" />
+
+ <!-- ASTRONAUT (Standing majestically in center-left) -->
+ <g transform="translate(480, 280)" filter="url(#dropShadow)">
+ 
+ <!-- Backpack / Life Support System -->
+ <rect x="-45" y="80" width="90" height="130" rx="15" fill="url(#suitWhite)" stroke="#9ca3af" stroke-width="3" />
+ <rect x="-30" y="95" width="60" height="40" rx="5" fill="#374151" />
+ <circle cx="0" cy="175" r="12" fill="url(#goldTrim)" />
+
+ <!-- Left Arm (Holding geological scanner / tool) -->
+ <path d="M-50 90 C -90 100, -110 130, -100 170 C -95 190, -85 200, -75 210" fill="none" stroke="url(#suitWhite)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" />
+ <!-- Arm Joint Accent -->
+ <circle cx="-95" cy="150" r="12" fill="#374151" />
+ <!-- Glove -->
+ <path d="M-85 205 L-70 230 L-55 215 Z" fill="#b91c1c" />
+
+ <!-- Torso -->
+ <path d="M-40 70 L40 70 L50 180 L-50 180 Z" fill="url(#suitWhite)" />
+ <!-- Chest Control Panel / Harness -->
+ <rect x="-25" y="90" width="50" height="45" rx="6" fill="#1f2937" stroke="url(#goldTrim)" stroke-width="2" />
+ <circle cx="-12" cy="112" r="5" fill="#ef4444" />
+ <circle cx="12" cy="112" r="5" fill="#3b82f6" />
+ <rect x="-8" y="98" width="16" height="6" rx="2" fill="#10b981" />
+
+ <!-- Right Arm (Relaxed, slightly out) -->
+ <path d="M45 90 C 80 110, 100 140, 90 180" fill="none" stroke="url(#suitWhite)" stroke-width="26" stroke-linecap="round" />
+ <circle cx="80" cy="140" r="12" fill="#374151" />
+ <path d="M85 175 L100 195 L110 180 Z" fill="#b91c1c" />
+
+ <!-- Legs -->
+ <!-- Left Leg -->
+ <path d="M-30 175 C -35 230, -45 280, -40 330" fill="none" stroke="url(#suitWhite)" stroke-width="30" stroke-linecap="round" />
+ <ellipse cx="-40" cy="335" rx="22" ry="12" fill="#374151" />
+ <!-- Right Leg -->
+ <path d="M30 175 C 45 220, 60 270, 75 320" fill="none" stroke="url(#suitWhite)" stroke-width="30" stroke-linecap="round" />
+ <ellipse cx="78" cy="325" rx="22" ry="12" fill="#374151" />
+
+ <!-- Neck Ring -->
+ <path d="M-25 65 L25 65 L20 80 L-20 80 Z" fill="#374151" />
+
+ <!-- Helmet & Visor -->
+ <!-- Outer Helmet Dome (Glass/Composite) -->
+ <circle cx="0" cy="20" r="42" fill="url(#suitWhite)" opacity="0.2" />
+ <path d="M-32 20 C -32 -5, -15 -25, 0 -25 C 15 -25, 32 -5, 32 20 C 32 40, 20 55, 0 55 C -20 55, -32 40, -32 20 Z" fill="url(#visorGrad)" stroke="url(#goldTrim)" stroke-width="3" filter="url(#dropShadow)" />
+ 
+ <!-- Visor Reflection Highlights -->
+ <path d="M-18 -5 C -10 -18, 5 -15, 12 -5 C 5 -10, -10 -10, -18 -5 Z" fill="#ffffff" opacity="0.6" />
+ <ellipse cx="-12" cy="15" rx="3" ry="8" fill="#ffffff" opacity="0.4" transform="rotate(-20 -12 15)" />
+ </g>
+
+ <!-- FOREGROUND DUST / ATMOSPHERIC PARTICLES -->
+ <g fill="#ffab91" opacity="0.5">
+ <circle cx="200" cy="500" r="3" />
+ <circle cx="350" cy="600" r="2" />
+ <circle cx="650" cy="650" r="4" />
+ <circle cx="800" cy="550" r="2.5" />
+ <circle cx="1050" cy="620" r="3" />
+ <circle cx="1120" cy="480" r="1.5" />
+ </g>
+</svg>

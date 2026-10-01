@@ -1,0 +1,251 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="70%" fx="50%" fy="30%">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="50%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#030508"/>
+    </radialGradient>
+
+    <!-- Ground Grid Gradient -->
+    <linearGradient id="gridFade" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00f3ff" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#bd00ff" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Car Body Primary Gradient (Obsidian & Pearl) -->
+    <linearGradient id="bodyMain" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#2a324b"/>
+      <stop offset="30%" stop-color="#141824"/>
+      <stop offset="70%" stop-color="#0d111a"/>
+      <stop offset="100%" stop-color="#05070a"/>
+    </linearGradient>
+
+    <!-- Car Upper Panel / Accents -->
+    <linearGradient id="bodyUpper" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <!-- Windshield Tint (Cyan Holographic) -->
+    <linearGradient id="windshield" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f3ff" stop-opacity="0.3"/>
+      <stop offset="40%" stop-color="#3b82f6" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.5"/>
+    </linearGradient>
+
+    <!-- Neon Cyan Glow -->
+    <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur1"/>
+      <feGaussianBlur stdDeviation="20" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Neon Magenta/Purple Glow -->
+    <filter id="magentaGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur1"/>
+      <feGaussianBlur stdDeviation="25" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Underglow Floor Reflection -->
+    <radialGradient id="underglow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00f3ff" stop-opacity="0.8"/>
+      <stop offset="40%" stop-color="#0066ff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Wheel Rim Gradient -->
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+
+    <!-- Carbon Fiber Pattern Simulation -->
+    <pattern id="carbon" width="6" height="6" patternUnits="userSpaceOnUse">
+      <rect width="6" height="6" fill="#0f172a"/>
+      <path d="M0 3L3 0H6L3 3H0Z" fill="#1e293b"/>
+      <path d="M3 6L6 3V6H3Z" fill="#1e293b"/>
+    </pattern>
+  </defs>
+
+  <!-- Deep Atmospheric Background -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+
+  <!-- Cyberpunk Background Geometric Lines & Mountains/City Silhouette -->
+  <g opacity="0.3">
+    <!-- Distant Cyber Sun -->
+    <circle cx="500" cy="350" r="220" fill="none" stroke="url(#magentaGlow)" stroke-width="2" opacity="0.4"/>
+    <path d="M 280 350 L 720 350 M 300 400 L 700 400 M 340 450 L 660 450 M 400 500 L 600 500" stroke="#ff007f" stroke-width="2" opacity="0.5"/>
+    
+    <!-- City Skyline Silhouette -->
+    <path d="M0 650 L50 620 L80 620 L120 580 L150 580 L180 650 L220 530 L250 530 L280 650 L340 590 L380 590 L410 650 L480 480 L520 480 L560 650 L620 550 L650 550 L680 650 L730 510 L770 510 L800 650 L850 590 L900 590 L930 650 L1000 600 L1000 800 L0 800 Z" fill="#030712"/>
+  </g>
+
+  <!-- Perspective Ground Grid -->
+  <g transform="translate(0, 600)">
+    <!-- Horizon Glow -->
+    <ellipse cx="500" cy="0" rx="450" ry="30" fill="url(#underglow)"/>
+    
+    <!-- Grid Planes -->
+    <path d="M 0 50 L 1000 50 M 0 70 L 1000 70 M 0 100 L 1000 100 M 0 140 L 1000 140 M 0 190 L 1000 190 M 0 250 L 1000 250 M 0 320 L 1000 320" stroke="#00f3ff" stroke-width="1.5" opacity="0.25"/>
+    <!-- Perspective converging lines -->
+    <path d="M 500 0 L 150 400 M 500 0 L 300 400 M 500 0 L 420 400 M 500 0 L 500 400 M 500 0 L 580 400 M 500 0 L 700 400 M 500 0 L 850 400" stroke="#00f3ff" stroke-width="1.5" opacity="0.2"/>
+    <rect x="0" y="0" width="1000" height="400" fill="url(#gridFade)" style="mix-blend-mode: screen;"/>
+  </g>
+
+  <!-- CAR UNDERGLOW REFLECTION -->
+  <ellipse cx="500" cy="740" rx="320" ry="45" fill="url(#underglow)" filter="url(#cyanGlow)" opacity="0.7"/>
+
+  <!-- ==================== FUTURISTIC CAR GRAPHIC ==================== -->
+  <g transform="translate(50, 150)">
+
+    <!-- REAR WHEEL ASSEMBLY -->
+    <g transform="translate(200, 500)">
+      <!-- Tire Shadow/Glow -->
+      <ellipse cx="0" cy="80" rx="90" ry="30" fill="#000" opacity="0.8"/>
+      <!-- Outer Tire -->
+      <circle cx="0" cy="0" r="95" fill="#090d16"/>
+      <circle cx="0" cy="0" r="85" fill="#111827"/>
+      <!-- Rim -->
+      <circle cx="0" cy="0" r="65" fill="url(#rimGrad)" stroke="#00f3ff" stroke-width="3" filter="url(#cyanGlow)"/>
+      <!-- Rim Spokes -->
+      <path d="M0 -65 L0 65 M-56 -32 L56 32 M-56 32 L56 -32 M-32 -56 L32 56 M-32 56 L32 -56" stroke="#0f172a" stroke-width="6"/>
+      <circle cx="0" cy="0" r="30" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+      <circle cx="0" cy="0" r="10" fill="#00f3ff" filter="url(#cyanGlow)"/>
+    </g>
+
+    <!-- FRONT WHEEL ASSEMBLY -->
+    <g transform="translate(700, 500)">
+      <!-- Tire Shadow/Glow -->
+      <ellipse cx="0" cy="80" rx="90" ry="30" fill="#000" opacity="0.8"/>
+      <!-- Outer Tire -->
+      <circle cx="0" cy="0" r="95" fill="#090d16"/>
+      <circle cx="0" cy="0" r="85" fill="#111827"/>
+      <!-- Rim -->
+      <circle cx="0" cy="0" r="65" fill="url(#rimGrad)" stroke="#00f3ff" stroke-width="3" filter="url(#cyanGlow)"/>
+      <!-- Rim Spokes -->
+      <path d="M0 -65 L0 65 M-56 -32 L56 32 M-56 32 L56 -32 M-32 -56 L32 56 M-32 56 L32 -56" stroke="#0f172a" stroke-width="6"/>
+      <circle cx="0" cy="0" r="30" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+      <circle cx="0" cy="0" r="10" fill="#00f3ff" filter="url(#cyanGlow)"/>
+    </g>
+
+    <!-- CHASSIS / LOWER BODY -->
+    <!-- Side Skirt & Vent Detail -->
+    <path d="M 140 520 L 760 520 L 780 480 L 120 480 Z" fill="url(#carbon)" stroke="#38bdf8" stroke-width="1" opacity="0.8"/>
+    <path d="M 350 510 L 550 510 L 530 495 L 370 495 Z" fill="#00f3ff" opacity="0.5" filter="url(#cyanGlow)"/>
+
+    <!-- MAIN BODY SHELL -->
+    <path d="M 60 480 
+             C 120 480, 160 440, 200 400 
+             C 270 340, 420 320, 550 320 
+             C 680 320, 750 360, 820 420 
+             C 870 460, 880 480, 920 490
+             C 930 495, 930 510, 910 515
+             C 850 525, 750 530, 500 530
+             C 250 530, 120 525, 70 515
+             C 50 510, 50 485, 60 480 Z" 
+          fill="url(#bodyMain)" stroke="#38bdf8" stroke-width="2"/>
+
+    <!-- SCULPTED BODY PANELS & LIGHTNING CREASES -->
+    <!-- Rear Fender Flare -->
+    <path d="M 110 480 C 140 400, 210 380, 290 410 C 270 450, 230 480, 180 480 Z" fill="url(#bodyUpper)" stroke="#64748b" stroke-width="1.5"/>
+    <!-- Front Fender Flare -->
+    <path d="M 790 470 C 750 390, 670 380, 610 420 C 640 460, 680 480, 740 480 Z" fill="url(#bodyUpper)" stroke="#64748b" stroke-width="1.5"/>
+
+    <!-- Aerodynamic Side Blade -->
+    <path d="M 230 460 L 680 460 L 650 440 L 260 440 Z" fill="#0f172a" stroke="#00f3ff" stroke-width="1" filter="url(#cyanGlow)"/>
+
+    <!-- COCKPIT / CANOPY (Fighter-Jet Style) -->
+    <path d="M 300 390 
+             C 380 330, 520 330, 620 390 
+             C 580 392, 360 392, 300 390 Z" 
+          fill="url(#windshield)" stroke="#00f3ff" stroke-width="2" filter="url(#cyanGlow)"/>
+    
+    <!-- Canopy Center Splitter -->
+    <path d="M 460 330 L 465 390" stroke="#00f3ff" stroke-width="1.5" opacity="0.8"/>
+
+    <!-- FUTURISTIC FRONT NOSE & SPLITTER -->
+    <path d="M 820 450 L 920 495 L 890 515 L 780 490 Z" fill="#0b0f19" stroke="#00f3ff" stroke-width="1.5"/>
+    <path d="M 910 493 L 940 500 L 915 508 Z" fill="#00f3ff" filter="url(#cyanGlow)"/>
+
+    <!-- REAR WING / SPOILER (Aggressive Cyberpunk Aero) -->
+    <g>
+      <!-- Wing Mounts -->
+      <path d="M 100 410 L 130 350 M 140 415 L 160 350" stroke="#1e293b" stroke-width="5"/>
+      <!-- Main Wing Blade -->
+      <path d="M 70 345 L 210 335 L 205 350 L 75 360 Z" fill="#1e293b" stroke="#00f3ff" stroke-width="1.5" filter="url(#cyanGlow)"/>
+      <!-- Endplate -->
+      <path d="M 65 330 L 80 330 L 75 370 L 60 370 Z" fill="#00f3ff" opacity="0.8"/>
+    </g>
+
+    <!-- HEADLIGHTS (Sharp Laser Blade) -->
+    <g filter="url(#cyanGlow)">
+      <path d="M 820 450 L 910 460 L 895 466 L 825 455 Z" fill="#ffffff"/>
+      <path d="M 820 450 L 910 460" stroke="#00f3ff" stroke-width="3"/>
+      <!-- Additional light beams projecting forward -->
+      <polygon points="910,460 1020,480 1020,440" fill="#00f3ff" opacity="0.15"/>
+    </g>
+
+    <!-- TAILLIGHTS (Crimson Plasma Strip) -->
+    <g filter="url(#magentaGlow)">
+      <path d="M 72 405 C 70 410, 75 418, 90 420 L 100 418 L 95 410 Z" fill="#ff0055"/>
+      <path d="M 72 405 L 100 418" stroke="#ff007f" stroke-width="4"/>
+      <!-- Glow projection backward -->
+      <polygon points="72,405 -20,390 -20,430" fill="#ff007f" opacity="0.1"/>
+    </g>
+
+    <!-- SURFACE LIGHTING / LED STRIPS (Accent Lines) -->
+    <!-- Roof Arc Light -->
+    <path d="M 315 385 C 390 335, 510 335, 605 385" fill="none" stroke="#00f3ff" stroke-width="2" filter="url(#cyanGlow)"/>
+    
+    <!-- Door Seam / Neon Accent -->
+    <path d="M 380 390 L 340 460" fill="none" stroke="#bd00ff" stroke-width="1.5" filter="url(#magentaGlow)"/>
+    <path d="M 540 390 L 580 460" fill="none" stroke="#bd00ff" stroke-width="1.5" filter="url(#magentaGlow)"/>
+
+    <!-- Futuristic Decals / Kanji / Tech Glyphs -->
+    <g transform="translate(430, 440) rotate(-5)" opacity="0.6">
+      <rect x="0" y="0" width="40" height="6" fill="#00f3ff" filter="url(#cyanGlow)"/>
+      <rect x="45" y="0" width="15" height="6" fill="#ff007f" filter="url(#magentaGlow)"/>
+      <circle cx="70" cy="3" r="3" fill="#00f3ff"/>
+      <text x="0" y="18" fill="#38bdf8" font-family="monospace" font-size="10" letter-spacing="2">NEO-V 99</text>
+    </g>
+
+    <!-- Exhaust Port (Blue Plasma Burn) -->
+    <ellipse cx="65" cy="450" rx="6" ry="12" fill="#00f3ff" filter="url(#cyanGlow)"/>
+    <ellipse cx="63" cy="450" rx="3" ry="8" fill="#ffffff"/>
+
+  </g>
+
+  <!-- FOREGROUND ATMOSPHERIC PARTICLES / HUD ELEMENTS -->
+  <g opacity="0.7">
+    <!-- Floating Cyber Particles -->
+    <circle cx="150" cy="250" r="2" fill="#00f3ff" filter="url(#cyanGlow)"/>
+    <circle cx="280" cy="180" r="1.5" fill="#ff007f" filter="url(#magentaGlow)"/>
+    <circle cx="720" cy="220" r="2.5" fill="#00f3ff" filter="url(#cyanGlow)"/>
+    <circle cx="850" cy="300" r="1" fill="#ffffff"/>
+    <circle cx="400" cy="120" r="2" fill="#00f3ff" filter="url(#cyanGlow)"/>
+    <circle cx="600" cy="150" r="1.5" fill="#ff007f" filter="url(#magentaGlow)"/>
+    
+    <!-- HUD Target Reticle / Corner Brackets -->
+    <path d="M 50 50 L 90 50 M 50 50 L 50 90" stroke="#00f3ff" stroke-width="2" fill="none" opacity="0.4"/>
+    <path d="M 950 50 L 910 50 M 950 50 L 950 90" stroke="#00f3ff" stroke-width="2" fill="none" opacity="0.4"/>
+    <path d="M 50 950 L 90 950 M 50 950 L 50 910" stroke="#00f3ff" stroke-width="2" fill="none" opacity="0.4"/>
+    <path d="M 950 950 L 910 950 M 950 950 L 950 910" stroke="#00f3ff" stroke-width="2" fill="none" opacity="0.4"/>
+
+    <!-- Subtle HUD Text Data -->
+    <text x="70" y="80" fill="#00f3ff" font-family="monospace" font-size="12" letter-spacing="3" opacity="0.5">SYS.ON // 2077.FX</text>
+    <text x="810" y="80" fill="#ff007f" font-family="monospace" font-size="12" letter-spacing="3" opacity="0.5">VEL: 340 KM/H</text>
+  </g>
+</svg>
