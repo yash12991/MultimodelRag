@@ -13,6 +13,19 @@ from reportlab.lib.units import inch
 PDF_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "generated_pdfs")
 os.makedirs(PDF_DIR, exist_ok=True)
 
+def html_to_markdown_for_pdf(html_text: str) -> str:
+    text = re.sub(r'<style[\s\S]*?</style>', '', html_text, flags=re.IGNORECASE)
+    text = re.sub(r'<script[\s\S]*?</script>', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<h1[^>]*>(.*?)</h1>', r'\n# \1\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<h2[^>]*>(.*?)</h2>', r'\n## \1\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<h3[^>]*>(.*?)</h3>', r'\n### \1\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<li[^>]*>(.*?)</li>', r'\n- \1', text, flags=re.IGNORECASE)
+    text = re.sub(r'<p[^>]*>(.*?)</p>', r'\n\1\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<blockquote[^>]*>(.*?)</blockquote>', r'\n> \1\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<hr[^>]*>', r'\n---\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<[^>]+>', '', text)
+    return text
+
 def generate_pdf_document(title: str, content: str, author: str = "Aisia Autonomous AI") -> Dict[str, Any]:
     """
     Autonomously generates an executive-grade, beautifully formatted PDF report or document.
@@ -23,6 +36,11 @@ def generate_pdf_document(title: str, content: str, author: str = "Aisia Autonom
         unique_id = uuid.uuid4().hex[:6]
         filename = f"{slug}_{unique_id}.pdf"
         file_path = os.path.join(PDF_DIR, filename)
+
+        if '<html' in content.lower() or '<body' in content.lower() or '<h1' in content.lower():
+            processed_content = html_to_markdown_for_pdf(content)
+        else:
+            processed_content = content
 
         doc = SimpleDocTemplate(
             file_path,
@@ -120,7 +138,7 @@ def generate_pdf_document(title: str, content: str, author: str = "Aisia Autonom
         story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#38bdf8'), spaceAfter=14))
 
         # 2. Parse Markdown-like Content
-        lines = content.split('\n')
+        lines = processed_content.split('\n')
         for raw_line in lines:
             line = raw_line.strip()
             if not line:

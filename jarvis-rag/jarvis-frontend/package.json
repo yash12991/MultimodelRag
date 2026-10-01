@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/jszip": "^3.4.0",
+    "jszip": "^3.10.2",
     "orb-ui": "^0.9.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

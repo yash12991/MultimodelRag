@@ -8,7 +8,7 @@ import { BrandLogo } from './components/BrandLogo'
 
 export interface ToolExecutionStep {
   id: string
-  type: 'notion' | 'memory' | 'vector' | 'web' | 'weather' | 'calendar' | 'tool' | 'mcp'
+  type: 'notion' | 'memory' | 'vector' | 'web' | 'weather' | 'calendar' | 'tool' | 'mcp' | 'image' | 'pdf'
   icon: string
   title: string
   summary: string
@@ -117,7 +117,7 @@ const LANGUAGES = [
 ]
 
 export interface PersonaPreset {
-  id: 'empathetic' | 'professional' | 'witty' | 'concise'
+  id: 'empathetic' | 'professional' | 'witty' | 'concise' | 'companion'
   name: string
   subtitle: string
   badge: string
@@ -177,27 +177,44 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
     defaultRate: '+15%',
     previewSample: "Understood. Root cause isolated. Optimization applied and all system tests are passing.",
     toneTags: ['Fast', 'Minimalist', 'Direct', 'Laser-focused']
+  },
+  {
+    id: 'companion',
+    name: 'Companion / GF',
+    subtitle: 'Affectionate, candid & intimate',
+    badge: 'Close Partner',
+    icon: 'companion',
+    desc: 'Candid emotional closeness, sweet banter, heartfelt care, and playful intimacy without corporate detachment.',
+    defaultPitch: '+3Hz',
+    defaultRate: '-2%',
+    previewSample: "Hey babe! I'm so happy you're here. You know you can tell me anything, right? What's on your mind today?",
+    toneTags: ['Affectionate', 'Intimate', 'Playful', 'Candid']
   }
 ]
 
 function renderPersonaIcon(id: string) {
+  if (id === 'companion') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
+    )
+  }
   if (id === 'empathetic') {
     return (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
     )
   }
   if (id === 'professional') {
     return (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
     )
   }
   if (id === 'witty') {
     return (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
     )
   }
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>
   )
 }
 
@@ -329,14 +346,15 @@ export default function App() {
   const [showModelDropdown, setShowModelDropdown] = useState<boolean>(false)
   const [showToolsMenu, setShowToolsMenu] = useState<boolean>(false)
   const toolsMenuRef = useRef<HTMLDivElement>(null)
+  const modelSelectorRef = useRef<HTMLDivElement>(null)
   const [activeModal, setActiveModal] = useState<'none' | 'voice-call' | 'settings' | 'files' | 'notion'>('none')
   const [settingsTab, setSettingsTab] = useState<'voice' | 'persona' | 'memory' | 'integrations' | 'system'>('voice')
-  
+
   // In-Call Messaging (ChatGPT Voice & Text Hybrid Mode)
   const [isInCallChatOpen, setIsInCallChatOpen] = useState<boolean>(false)
   const [inCallInput, setInCallInput] = useState<string>('')
   const inCallChatEndRef = useRef<HTMLDivElement>(null)
-  
+
   // Modular Agent Mode & Live Interactive Canvas
   const [agentMode, setAgentMode] = useState<'general' | 'deep_research' | 'coding'>('general')
   const [activeArtifact, setActiveArtifact] = useState<Artifact | null>(null)
@@ -368,7 +386,7 @@ export default function App() {
   const [voicePitch, setVoicePitch] = useState<string>(
     localStorage.getItem('aisia_pitch') || '+0Hz'
   )
-  const [voicePersona, setVoicePersona] = useState<'empathetic' | 'professional' | 'witty' | 'concise'>(
+  const [voicePersona, setVoicePersona] = useState<'empathetic' | 'professional' | 'witty' | 'concise' | 'companion'>(
     (localStorage.getItem('aisia_persona') as any) || 'empathetic'
   )
   const [previewAudioPlaying, setPreviewAudioPlaying] = useState<string | null>(null)
@@ -377,6 +395,7 @@ export default function App() {
   // Live Speech & Voice Call States
   const [isRecording, setIsRecording] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [activeSpeechText, setActiveSpeechText] = useState<string | null>(null)
   const [isMuted, setIsMuted] = useState(false)
   const [liveTranscription, setLiveTranscription] = useState('')
   const [latencyHud, setLatencyHud] = useState('~410ms')
@@ -427,7 +446,7 @@ export default function App() {
   const speechLangRef = useRef<string>(speechLang)
   const silenceTimerRef = useRef<any>(null)
   const accumulatedSpeechRef = useRef<string>('')
-  
+
   // Acoustic Echo Cancellation & Self-Feedback Prevention Refs
   const lastAudioEndTimeRef = useRef<number>(0)
   const lastAisiaSpokenRef = useRef<string[]>([])
@@ -456,6 +475,9 @@ export default function App() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const micStreamRef = useRef<MediaStream | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
+  const nextScheduledTimeRef = useRef<number>(0)
+  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([])
+  const audioEndTimeoutRef = useRef<any>(null)
 
   useEffect(() => { activeModalRef.current = activeModal }, [activeModal])
   useEffect(() => { isSpeakingRef.current = isSpeaking }, [isSpeaking])
@@ -653,52 +675,103 @@ export default function App() {
     fetchMcpServers()
   }, [currentUser])
 
-  // Close tools popover when clicking outside
+  // Close tools and model popovers when clicking outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
         setShowToolsMenu(false)
       }
+      if (modelSelectorRef.current && !modelSelectorRef.current.contains(e.target as Node)) {
+        setShowModelDropdown(false)
+      }
     }
-    if (showToolsMenu) {
+    if (showToolsMenu || showModelDropdown) {
       document.addEventListener('mousedown', handleOutsideClick)
     }
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick)
     }
-  }, [showToolsMenu])
+  }, [showToolsMenu, showModelDropdown])
 
 
 
-  // Stop active speech playback
+  const getOrCreateAudioContext = useCallback(() => {
+    if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      audioContextRef.current = new AudioCtx()
+    }
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume().catch(() => { })
+    }
+    return audioContextRef.current
+  }, [])
+
+  // Proactively unlock Web Audio Context upon first user interaction to comply with browser autoplay restrictions
+  useEffect(() => {
+    const unlock = () => {
+      try {
+        const ctx = getOrCreateAudioContext()
+        if (ctx && ctx.state === 'suspended') {
+          ctx.resume().catch(() => {})
+        }
+      } catch (_) {}
+    }
+    window.addEventListener('click', unlock, { once: true })
+    window.addEventListener('keydown', unlock, { once: true })
+    window.addEventListener('touchstart', unlock, { once: true })
+    return () => {
+      window.removeEventListener('click', unlock)
+      window.removeEventListener('keydown', unlock)
+      window.removeEventListener('touchstart', unlock)
+    }
+  }, [getOrCreateAudioContext])
+
+  // Stop active speech playback with immediate hardware cutoff
   const stopSpeaking = useCallback(() => {
     lastAudioEndTimeRef.current = Date.now()
+    if (audioEndTimeoutRef.current) {
+      clearTimeout(audioEndTimeoutRef.current)
+      audioEndTimeoutRef.current = null
+    }
+
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel() } catch (_) {}
+    }
+
+    // Stop all Web Audio scheduled buffer sources
+    activeSourcesRef.current.forEach(source => {
+      try {
+        source.stop()
+        source.disconnect()
+      } catch (_) { }
+    })
+    activeSourcesRef.current = []
+    nextScheduledTimeRef.current = 0
+
     if (currentAudioRef.current) {
       currentAudioRef.current.pause()
       currentAudioRef.current.currentTime = 0
       currentAudioRef.current = null
     }
     audioQueueRef.current.forEach(item => {
-      try { URL.revokeObjectURL(item.url) } catch (_) {}
+      try { URL.revokeObjectURL(item.url) } catch (_) { }
     })
     audioQueueRef.current = []
     isPlayingQueueRef.current = false
     setIsSpeaking(false)
     isSpeakingRef.current = false
+    setActiveSpeechText(null)
   }, [])
 
-  // Audio queue processor for low latency sentence streaming with preloading
+  // Audio queue processor for fallback HTMLAudio elements
   const processNextAudioInQueue = useCallback(() => {
     if (audioQueueRef.current.length === 0) {
       isPlayingQueueRef.current = false
       setIsSpeaking(false)
       isSpeakingRef.current = false
       lastAudioEndTimeRef.current = Date.now()
-      // In voice call mode: ensure recognition is active and listening
       if (activeModalRef.current === 'voice-call' && !isMutedRef.current) {
-        try {
-          recognitionRef.current?.start()
-        } catch (_) {}
+        try { recognitionRef.current?.start() } catch (_) { }
       }
       return
     }
@@ -716,13 +789,6 @@ export default function App() {
     const audio = nextItem.audio || new Audio(nextItem.url)
     currentAudioRef.current = audio
 
-    // Pre-warm the next audio chunk in memory so transition is 0ms gapless
-    if (audioQueueRef.current.length > 0 && audioQueueRef.current[0].audio) {
-      try {
-        audioQueueRef.current[0].audio.load()
-      } catch (_) {}
-    }
-
     audio.onended = () => {
       URL.revokeObjectURL(nextItem.url)
       lastAudioEndTimeRef.current = Date.now()
@@ -734,36 +800,110 @@ export default function App() {
       processNextAudioInQueue()
     }
     audio.play().catch(e => {
-      console.warn('Playback error', e)
+      console.warn('Playback error, trying Web Speech API fallback:', e)
       lastAudioEndTimeRef.current = Date.now()
+      if ('speechSynthesis' in window && nextItem.sentence) {
+        try {
+          window.speechSynthesis.cancel()
+          const utt = new SpeechSynthesisUtterance(nextItem.sentence)
+          utt.lang = speechLangRef.current || 'en-US'
+          utt.onend = () => processNextAudioInQueue()
+          utt.onerror = () => processNextAudioInQueue()
+          window.speechSynthesis.speak(utt)
+          return
+        } catch (_) {}
+      }
       processNextAudioInQueue()
     })
   }, [])
 
-  const enqueueAudioChunk = useCallback((base64Data: string, sentence: string) => {
+  // Ultra-low latency gapless audio chunk scheduler via Web Audio API
+  const enqueueAudioChunk = useCallback(async (base64Data: string, sentence: string) => {
+    if (sentence) {
+      lastAisiaSpokenRef.current.push(sentence.toLowerCase())
+      if (lastAisiaSpokenRef.current.length > 8) {
+        lastAisiaSpokenRef.current.shift()
+      }
+    }
+
     try {
+      const ctx = getOrCreateAudioContext()
+      if (ctx.state === 'suspended') {
+        await ctx.resume().catch(() => {})
+      }
+
       const binaryString = atob(base64Data)
-      const bytes = new Uint8Array(binaryString.length)
-      for (let i = 0; i < binaryString.length; i++) {
+      const len = binaryString.length
+      const bytes = new Uint8Array(len)
+      for (let i = 0; i < len; i++) {
         bytes[i] = binaryString.charCodeAt(i)
       }
-      const blob = new Blob([bytes], { type: 'audio/mpeg' })
-      const url = URL.createObjectURL(blob)
-      
-      // Instantly pre-initialize Audio object to eliminate decoding latency
-      const preloadedAudio = new Audio(url)
-      preloadedAudio.preload = 'auto'
-      preloadedAudio.load()
 
-      audioQueueRef.current.push({ url, sentence, audio: preloadedAudio })
+      // Fast in-memory asynchronous PCM decode
+      const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0))
 
-      if (!isPlayingQueueRef.current) {
-        processNextAudioInQueue()
+      const source = ctx.createBufferSource()
+      source.buffer = audioBuffer
+
+      // Output cleanly to destination without misrouting through microphone analyser
+      source.connect(ctx.destination)
+
+      // Sample-accurate scheduled playback: start immediately or exactly when previous sentence finishes
+      const now = ctx.currentTime
+      const startTime = Math.max(now, nextScheduledTimeRef.current)
+      source.start(startTime)
+      nextScheduledTimeRef.current = startTime + audioBuffer.duration
+      activeSourcesRef.current.push(source)
+
+      setIsSpeaking(true)
+      isSpeakingRef.current = true
+
+      if (audioEndTimeoutRef.current) {
+        clearTimeout(audioEndTimeoutRef.current)
       }
+
+      const remainingMs = Math.max(60, (nextScheduledTimeRef.current - ctx.currentTime) * 1000)
+      audioEndTimeoutRef.current = setTimeout(() => {
+        setIsSpeaking(false)
+        isSpeakingRef.current = false
+        lastAudioEndTimeRef.current = Date.now()
+        activeSourcesRef.current = []
+        nextScheduledTimeRef.current = 0
+        if (activeModalRef.current === 'voice-call' && !isMutedRef.current) {
+          try { recognitionRef.current?.start() } catch (_) { }
+        }
+      }, remainingMs)
+
     } catch (e) {
-      console.error('Audio chunk decode error', e)
+      console.warn('Web Audio decode fallback to HTMLAudio:', e)
+      try {
+        const binaryString = atob(base64Data)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i)
+        const blob = new Blob([bytes], { type: 'audio/mpeg' })
+        const url = URL.createObjectURL(blob)
+        const preloadedAudio = new Audio(url)
+        preloadedAudio.preload = 'auto'
+        audioQueueRef.current.push({ url, sentence, audio: preloadedAudio })
+        if (!isPlayingQueueRef.current) {
+          processNextAudioInQueue()
+        }
+      } catch (_) {
+        if ('speechSynthesis' in window && sentence) {
+          try {
+            window.speechSynthesis.cancel()
+            const utt = new SpeechSynthesisUtterance(sentence)
+            utt.lang = speechLangRef.current || 'en-US'
+            utt.onend = () => { setIsSpeaking(false); isSpeakingRef.current = false }
+            utt.onerror = () => { setIsSpeaking(false); isSpeakingRef.current = false }
+            setIsSpeaking(true)
+            isSpeakingRef.current = true
+            window.speechSynthesis.speak(utt)
+          } catch (_) {}
+        }
+      }
     }
-  }, [processNextAudioInQueue])
+  }, [getOrCreateAudioContext, processNextAudioInQueue])
 
   // Speech Recognition Setup (Continuous & Bidirectional Full-Duplex)
   useEffect(() => {
@@ -796,7 +936,7 @@ export default function App() {
             interim += event.results[i][0].transcript
           }
         }
-        
+
         const currentUtterance = (final || interim).trim()
         if (!currentUtterance) return
 
@@ -813,16 +953,16 @@ export default function App() {
           clearTimeout(silenceTimerRef.current)
         }
 
-        // Universal Conversational Auto-Dispatch: 950ms silence triggers auto-send
-        const silenceDelay = activeModalRef.current === 'voice-call' ? 950 : 1100
+        // Universal Conversational Auto-Dispatch: 580ms silence in call mode, 750ms in text mode
+        const silenceDelay = activeModalRef.current === 'voice-call' ? 580 : 750
         silenceTimerRef.current = setTimeout(() => {
           const toSend = accumulatedSpeechRef.current.trim()
-          if (toSend && !isAisiaSelfEcho(toSend) && !isSpeakingRef.current && (Date.now() - lastAudioEndTimeRef.current >= 800)) {
+          if (toSend && !isAisiaSelfEcho(toSend) && !isSpeakingRef.current && (Date.now() - lastAudioEndTimeRef.current >= 350)) {
             accumulatedSpeechRef.current = ''
             setLiveTranscription('')
             if (activeModalRef.current !== 'voice-call') {
               setIsRecording(false)
-              try { recognitionRef.current?.stop() } catch (_) {}
+              try { recognitionRef.current?.stop() } catch (_) { }
             }
             setStatusMessage('Thinking...')
             handleSendMessage(toSend)
@@ -836,11 +976,11 @@ export default function App() {
         if (final && activeModalRef.current !== 'voice-call') {
           if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
           const toSend = final.trim()
-          if (toSend && !isAisiaSelfEcho(toSend) && !isSpeakingRef.current && (Date.now() - lastAudioEndTimeRef.current >= 800)) {
+          if (toSend && !isAisiaSelfEcho(toSend) && !isSpeakingRef.current && (Date.now() - lastAudioEndTimeRef.current >= 350)) {
             accumulatedSpeechRef.current = ''
             setLiveTranscription('')
             setIsRecording(false)
-            try { recognitionRef.current?.stop() } catch (_) {}
+            try { recognitionRef.current?.stop() } catch (_) { }
             setStatusMessage('Thinking...')
             handleSendMessage(toSend)
           } else {
@@ -867,7 +1007,7 @@ export default function App() {
         setLiveTranscription('')
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
 
-        if (pending && !isAisiaSelfEcho(pending) && !isSpeakingRef.current && (Date.now() - lastAudioEndTimeRef.current >= 800)) {
+        if (pending && !isAisiaSelfEcho(pending) && !isSpeakingRef.current && (Date.now() - lastAudioEndTimeRef.current >= 350)) {
           setStatusMessage('Thinking...')
           handleSendMessage(pending)
         }
@@ -879,7 +1019,7 @@ export default function App() {
               if (recognitionRef.current && activeModalRef.current === 'voice-call') {
                 recognitionRef.current.start()
               }
-            } catch (_) {}
+            } catch (_) { }
           }, 80)
         } else {
           setIsRecording(false)
@@ -932,7 +1072,7 @@ export default function App() {
         recognitionRef.current.start()
         setIsRecording(true)
       }
-    } catch (_) {}
+    } catch (_) { }
   }, [stopSpeaking])
 
   const endVoiceCall = useCallback(() => {
@@ -946,7 +1086,7 @@ export default function App() {
       micStreamRef.current = null
     }
     if (audioContextRef.current) {
-      try { audioContextRef.current.close() } catch (_) {}
+      try { audioContextRef.current.close() } catch (_) { }
       audioContextRef.current = null
     }
     analyserRef.current = null
@@ -957,7 +1097,7 @@ export default function App() {
         recognitionRef.current.continuous = false
         recognitionRef.current.stop()
       }
-    } catch (_) {}
+    } catch (_) { }
 
     setIsRecording(false)
     setIsMuted(false)
@@ -974,13 +1114,13 @@ export default function App() {
     isMutedRef.current = nextMuted
 
     if (nextMuted) {
-      try { recognitionRef.current?.stop() } catch (_) {}
+      try { recognitionRef.current?.stop() } catch (_) { }
       setIsRecording(false)
     } else {
       try {
         recognitionRef.current?.start()
         setIsRecording(true)
-      } catch (_) {}
+      } catch (_) { }
     }
   }
 
@@ -1043,6 +1183,14 @@ export default function App() {
     if (abortControllerRef.current) abortControllerRef.current.abort()
     const abortController = new AbortController()
     abortControllerRef.current = abortController
+
+    // Eagerly unlock & resume AudioContext inside the user click/keydown gesture
+    try {
+      const ctx = getOrCreateAudioContext()
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {})
+      }
+    } catch (_) {}
 
     const currentThread = activeThreadId || 'default'
     const stagedAttachments = [...attachments]
@@ -1135,17 +1283,17 @@ export default function App() {
                 return { ...m, toolSteps: updated }
               }))
             } else if (data.type === 'sources') {
-              setMessages(prev => prev.map(m => 
+              setMessages(prev => prev.map(m =>
                 m.id === aisiaMsgId ? { ...m, sources: data.sources } : m
               ))
             } else if (data.type === 'follow_ups') {
-              setMessages(prev => prev.map(m => 
+              setMessages(prev => prev.map(m =>
                 m.id === aisiaMsgId ? { ...m, followUps: data.follow_ups } : m
               ))
             } else if (data.type === 'token') {
               setStatusMessage('')
               accumulatedText += data.content
-              setMessages(prev => prev.map(m => 
+              setMessages(prev => prev.map(m =>
                 m.id === aisiaMsgId ? { ...m, text: accumulatedText } : m
               ))
             } else if (data.type === 'audio') {
@@ -1193,6 +1341,7 @@ export default function App() {
                     const activeContent = (mergedFiles.find(f => f.name === activeName) || mergedFiles[0]).content
                     return {
                       ...prev,
+                      id: incomingArt.id || `project-${Date.now()}`,
                       title: incomingArt.title && incomingArt.title !== 'Multi-File Web Project' ? incomingArt.title : prev.title,
                       files: mergedFiles,
                       code: activeContent,
@@ -1201,12 +1350,12 @@ export default function App() {
                   }
                   return incomingArt
                 })
-                if (agentMode === 'coding') {
+                if (agentMode === 'coding' || (incomingArt.files && incomingArt.files.length > 1) || incomingArt.type === 'html') {
                   setIsCanvasOpen(true)
                 }
               }
             }
-          } catch (_) {}
+          } catch (_) { }
         }
       }
 
@@ -1215,8 +1364,8 @@ export default function App() {
       fetchMemories()
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        setMessages(prev => prev.map(m => 
-          m.id === aisiaMsgId 
+        setMessages(prev => prev.map(m =>
+          m.id === aisiaMsgId
             ? { ...m, text: "I'm ready. Let me know how I can help.", isStreaming: false }
             : m
         ))
@@ -1241,21 +1390,45 @@ export default function App() {
     await handleSendMessage(query)
   }
 
-  // Play single text TTS (replay button)
+  // Play single text TTS (replay button) with toggle, cleaning & Web Speech API fallback
   const replayAudio = async (text: string) => {
     if (!text) return
+    if (isSpeaking && activeSpeechText === text) {
+      stopSpeaking()
+      setActiveSpeechText(null)
+      return
+    }
     stopSpeaking()
+    setActiveSpeechText(text)
+
+    // Unlock audio context on user gesture
     try {
-      setIsSpeaking(true)
+      const ctx = getOrCreateAudioContext()
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {})
+      }
+    } catch (_) {}
+
+    setIsSpeaking(true)
+
+    // Format clean speech content (remove code blocks, URLs, markdown formatting)
+    let speechContent = text.replace(/```[\s\S]*?```/g, ' Code snippet omitted. ')
+    speechContent = speechContent.replace(/\[\[.*?\]\]/g, '')
+    speechContent = speechContent.replace(/https?:\/\/\S+/g, '')
+    speechContent = speechContent.replace(/[*_~`#><|]/g, '')
+    speechContent = speechContent.replace(/\s+/g, ' ').trim()
+    if (!speechContent) speechContent = text.slice(0, 300)
+
+    try {
       const res = await fetch('http://localhost:8000/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text, 
-          voice: selectedVoice, 
-          rate: voiceSpeed, 
+        body: JSON.stringify({
+          text: speechContent,
+          voice: selectedVoice,
+          rate: voiceSpeed,
           pitch: voicePitch,
-          language: speechLang 
+          language: speechLang
         })
       })
       if (!res.ok) throw new Error('TTS failed')
@@ -1265,12 +1438,76 @@ export default function App() {
       currentAudioRef.current = audio
       audio.onended = () => {
         setIsSpeaking(false)
+        setActiveSpeechText(null)
+        URL.revokeObjectURL(url)
+      }
+      audio.onerror = () => {
+        setIsSpeaking(false)
+        setActiveSpeechText(null)
         URL.revokeObjectURL(url)
       }
       await audio.play()
     } catch (err) {
-      console.warn('Replay failed', err)
-      setIsSpeaking(false)
+      console.warn('Backend TTS failed, using Web Speech API fallback', err)
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel()
+          const cleanText = text
+            .replace(/```[\s\S]*?```/g, '')
+            .replace(/[*_~`#><|]/g, '')
+            .replace(/https?:\/\/\S+/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 800)
+          const utterance = new SpeechSynthesisUtterance(cleanText)
+          utterance.lang = speechLang || 'en-US'
+          utterance.onend = () => {
+            setIsSpeaking(false)
+            setActiveSpeechText(null)
+          }
+          utterance.onerror = () => {
+            setIsSpeaking(false)
+            setActiveSpeechText(null)
+          }
+          window.speechSynthesis.speak(utterance)
+        } catch (_) {
+          setIsSpeaking(false)
+          setActiveSpeechText(null)
+        }
+      } else {
+        setIsSpeaking(false)
+        setActiveSpeechText(null)
+      }
+    }
+  }
+
+  // Export assistant message directly to PDF report
+  const [exportingPdfId, setExportingPdfId] = useState<string | null>(null)
+  const handleExportMessageAsPdf = async (msg: Message) => {
+    if (!msg.text || exportingPdfId) return
+    setExportingPdfId(msg.id)
+    try {
+      const firstLine = msg.text.replace(/^[#* \t\n]+/, '').split('\n')[0].trim()
+      const title = firstLine.length > 4 && firstLine.length < 55 ? firstLine : 'Aisia Executive Intelligence Brief'
+
+      const res = await fetch('http://localhost:8000/pdf/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          content: msg.text,
+          author: 'Aisia Autonomous AI'
+        })
+      })
+      if (!res.ok) throw new Error('PDF generation failed')
+      const data = await res.json()
+      if (data.download_url) {
+        window.open(data.view_url || data.download_url, '_blank')
+      }
+    } catch (err) {
+      console.error('PDF export error:', err)
+    } finally {
+      setExportingPdfId(null)
     }
   }
 
@@ -1473,18 +1710,18 @@ export default function App() {
             <span className="brand-title">Aisia</span>
             <span className="brand-version">v2.5</span>
           </div>
-          <button 
-            className="sidebar-close-btn" 
+          <button
+            className="sidebar-close-btn"
             onClick={() => setSidebarOpen(false)}
             title="Close sidebar"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         </div>
 
         {/* New Chat Button */}
         <button className="new-chat-btn" onClick={handleNewChat}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
           <span>New chat</span>
           <kbd className="kbd-shortcut">⌘K</kbd>
         </button>
@@ -1496,21 +1733,21 @@ export default function App() {
             <div className="threads-empty">No conversations yet</div>
           ) : (
             threads.map(t => (
-              <div 
-                key={t.id} 
+              <div
+                key={t.id}
                 className={`thread-item ${t.id === activeThreadId ? 'active' : ''}`}
                 onClick={() => selectThread(t.id)}
               >
                 <svg className="thread-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
                 <span className="thread-title">{t.title}</span>
-                <button 
-                  className="thread-del-btn" 
+                <button
+                  className="thread-del-btn"
                   onClick={(e) => handleDeleteThread(e, t.id)}
                   title="Delete chat"
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                 </button>
               </div>
             ))
@@ -1519,7 +1756,7 @@ export default function App() {
 
         {/* Sidebar Footer Widgets */}
         <div className="sidebar-footer">
-          <div 
+          <div
             className="integrations-quick-pill"
             onClick={() => {
               setActiveModal('settings')
@@ -1538,13 +1775,13 @@ export default function App() {
               <span className="user-name">{currentUser}</span>
               <span className="user-plan">Pro Autonomous Agent</span>
             </div>
-            <button 
-              className="user-settings-trigger" 
+            <button
+              className="user-settings-trigger"
               onClick={() => setActiveModal('settings')}
               title="Settings (Voice, Orb, Memory)"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </button>
           </div>
@@ -1558,17 +1795,17 @@ export default function App() {
           <div className="header-left">
             {!sidebarOpen && (
               <>
-                <button 
-                  className="header-icon-btn sidebar-trigger" 
+                <button
+                  className="header-icon-btn sidebar-trigger"
                   onClick={() => setSidebarOpen(true)}
                   title="Open sidebar"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /></svg>
                 </button>
-                <div 
-                  className="header-brand-collapsed" 
-                  onClick={() => setSidebarOpen(true)} 
-                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginRight: '6px' }} 
+                <div
+                  className="header-brand-collapsed"
+                  onClick={() => setSidebarOpen(true)}
+                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginRight: '6px' }}
                   title="Aisia Autonomous Agent"
                 >
                   <BrandLogo size={22} withContainer={true} />
@@ -1578,26 +1815,28 @@ export default function App() {
             )}
 
             {/* Model Selector Dropdown */}
-            <div className="model-selector-container">
-              <button 
+            <div className="model-selector-container" ref={modelSelectorRef}>
+              <button
                 className="model-selector-btn"
                 onClick={() => setShowModelDropdown(!showModelDropdown)}
+                title="Select AI Model"
               >
                 <span className="model-indicator-dot" />
-                <span className="model-name">
-                  {MODEL_OPTIONS.find(m => m.id === selectedModel)?.name}
-                </span>
-                <span className="model-pill">
-                  {MODEL_OPTIONS.find(m => m.id === selectedModel)?.badge}
-                </span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                <span className="model-name">Models</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
               </button>
 
               {showModelDropdown && (
                 <div className="model-dropdown-menu">
+                  <div className="model-dropdown-header" style={{ padding: '6px 10px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Active Model</span>
+                    <span style={{ fontSize: '0.74rem', color: '#60a5fa', fontWeight: 600 }}>
+                      {MODEL_OPTIONS.find(m => m.id === selectedModel)?.name}
+                    </span>
+                  </div>
                   {MODEL_OPTIONS.map(m => (
-                    <div 
-                      key={m.id} 
+                    <div
+                      key={m.id}
                       className={`model-option ${m.id === selectedModel ? 'selected' : ''}`}
                       onClick={() => {
                         setSelectedModel(m.id)
@@ -1606,7 +1845,12 @@ export default function App() {
                     >
                       <div className="model-option-top">
                         <span className="model-opt-name">{m.name}</span>
-                        <span className="model-opt-badge">{m.badge}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="model-opt-badge">{m.badge}</span>
+                          {m.id === selectedModel && (
+                            <span style={{ color: '#60a5fa', fontSize: '0.8rem', fontWeight: 'bold' }}>✓</span>
+                          )}
+                        </div>
                       </div>
                       <span className="model-opt-desc">{m.desc}</span>
                     </div>
@@ -1619,30 +1863,30 @@ export default function App() {
           {/* Centered Segmented Control Mode Switcher */}
           <div className="header-center">
             <div className="agent-mode-switcher">
-              <button 
+              <button
                 type="button"
                 className={`agent-mode-tab ${agentMode === 'general' ? 'active' : ''}`}
                 onClick={() => setAgentMode('general')}
                 title="Quick Assistant with Notion, RAG, and Web access"
               >
                 <span className="mode-icon">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
                 </span>
                 <span className="mode-label">Quick</span>
               </button>
-              <button 
+              <button
                 type="button"
                 className={`agent-mode-tab ${agentMode === 'deep_research' ? 'active' : ''}`}
                 onClick={() => setAgentMode('deep_research')}
                 title="Perplexity-style Deep Web Research with multi-source crawling and citations"
               >
                 <span className="mode-icon">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                 </span>
                 <span className="mode-label">Research</span>
                 <span className="mode-badge pro-badge">Pro</span>
               </button>
-              <button 
+              <button
                 type="button"
                 className={`agent-mode-tab ${agentMode === 'coding' ? 'active' : ''}`}
                 onClick={() => {
@@ -1655,7 +1899,7 @@ export default function App() {
                 title="Coding Agent with Live Artifacts Interactive Canvas"
               >
                 <span className="mode-icon">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>
                 </span>
                 <span className="mode-label">Canvas</span>
                 <span className="mode-badge">Code</span>
@@ -1666,27 +1910,27 @@ export default function App() {
           <div className="header-right">
             {/* Consolidated Tools & Integrations Popover */}
             <div className="tools-menu-wrapper" ref={toolsMenuRef}>
-              <button 
+              <button
                 type="button"
                 className={`header-pill-btn tools-trigger-btn ${showToolsMenu ? 'active' : ''}`}
                 onClick={() => setShowToolsMenu(prev => !prev)}
                 title="Tools, MCP Servers, Documents & Integrations"
               >
                 <span className="tools-sparkle-icon">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
                 </span>
                 <span>Tools</span>
                 <span className="header-count-bubble">{(mcpServers.length || 10) + documents.length}</span>
-                <svg 
-                  width="11" 
-                  height="11" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2.5" 
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
                   style={{ transform: showToolsMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}
                 >
-                  <polyline points="6 9 12 15 18 9"/>
+                  <polyline points="6 9 12 15 18 9" />
                 </svg>
               </button>
 
@@ -1694,8 +1938,8 @@ export default function App() {
                 <div className="tools-dropdown-menu">
                   <div className="tools-dropdown-header">EXTENSIONS & KNOWLEDGE</div>
 
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="tools-dropdown-item"
                     onClick={() => {
                       setShowToolsMenu(false)
@@ -1705,7 +1949,7 @@ export default function App() {
                   >
                     <div className="tools-item-left">
                       <span className="tools-item-icon">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24" /></svg>
                       </span>
                       <div className="tools-item-text">
                         <div className="tools-item-title">MCP Hub & Tools</div>
@@ -1715,8 +1959,8 @@ export default function App() {
                     <span className="tools-item-badge live">Connected</span>
                   </button>
 
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="tools-dropdown-item"
                     onClick={() => {
                       setShowToolsMenu(false)
@@ -1725,7 +1969,7 @@ export default function App() {
                   >
                     <div className="tools-item-left">
                       <span className="tools-item-icon">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
                       </span>
                       <div className="tools-item-text">
                         <div className="tools-item-title">Knowledge Files</div>
@@ -1735,8 +1979,8 @@ export default function App() {
                     <span className="tools-item-badge count">{documents.length}</span>
                   </button>
 
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="tools-dropdown-item"
                     onClick={() => {
                       setShowToolsMenu(false)
@@ -1745,7 +1989,7 @@ export default function App() {
                   >
                     <div className="tools-item-left">
                       <span className="tools-item-icon">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
                       </span>
                       <div className="tools-item-text">
                         <div className="tools-item-title">Notion Workspace</div>
@@ -1759,27 +2003,27 @@ export default function App() {
             </div>
 
             {/* LIVE VOICE MODE BUTTON */}
-            <button 
+            <button
               className="voice-call-trigger-btn"
               onClick={startVoiceCall}
               title="Open Gemini Live Voice Mode (Orb Visualizer)"
             >
               <span className="voice-pulse-ring" />
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
-                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
               </svg>
               <span>Live Voice</span>
             </button>
 
             {/* Settings Trigger */}
-            <button 
-              className="header-icon-btn" 
+            <button
+              className="header-icon-btn"
               onClick={() => setActiveModal('settings')}
               title="Settings (Voice, Persona, Memory, MCP, System)"
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </button>
           </div>
@@ -1803,7 +2047,7 @@ export default function App() {
                         Crawl live web publications, verify facts across sources, cite inline references, and autonomously chain tasks.
                       </p>
                       <div className="starter-prompts-grid">
-                        <button 
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Compare viscous dampers vs tuned mass dampers in structural engineering")}
                         >
@@ -1811,7 +2055,7 @@ export default function App() {
                           <span className="starter-desc">In-depth seismic & wind vibration control analysis with academic citations</span>
                         </button>
 
-                        <button 
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Conduct an in-depth market and technology analysis of solid-state EV batteries in 2026")}
                         >
@@ -1819,7 +2063,7 @@ export default function App() {
                           <span className="starter-desc">Energy density metrics, commercialization timelines, and top manufacturers</span>
                         </button>
 
-                        <button 
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Deep research autonomous AI agent frameworks in 2026 and save a summary brief to my Notion workspace")}
                         >
@@ -1827,7 +2071,7 @@ export default function App() {
                           <span className="starter-desc">Autonomous web crawl + structured brief automatically created in your workspace</span>
                         </button>
 
-                        <button 
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Investigate the latest architectural strategies for base isolation in earthquake zones")}
                         >
@@ -1843,7 +2087,7 @@ export default function App() {
                         Generate interactive single-file web apps, SVGs, and Mermaid diagrams with side-by-side live execution.
                       </p>
                       <div className="starter-prompts-grid">
-                        <button 
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Create a modern interactive Stopwatch web app with millisecond timer, lap records, and neon glassmorphism UI")}
                         >
@@ -1851,7 +2095,7 @@ export default function App() {
                           <span className="starter-desc">Live interactive timer with start/pause/reset and lap recording</span>
                         </button>
 
-                        <button 
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Build an interactive 3D Glassmorphic Pricing Card in HTML/CSS with monthly/annual billing switch and hover glow")}
                         >
@@ -1859,7 +2103,7 @@ export default function App() {
                           <span className="starter-desc">Clean modern component with animated billing toggle and sleek styling</span>
                         </button>
 
-                        <button 
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Generate a complete Mermaid architecture diagram for a Distributed Real-time AI Agent system")}
                         >
@@ -1867,7 +2111,7 @@ export default function App() {
                           <span className="starter-desc">Mermaid flowchart showing Frontend, FastAPI, Redis, and LLM nodes</span>
                         </button>
 
-                        <button 
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Create an interactive Pomodoro Focus Timer web app with 25-minute countdown, audio alerts, and task progress bar")}
                         >
@@ -1883,7 +2127,23 @@ export default function App() {
                         Aisia is connected to your Notion workspace, Chroma vector database, Edge Neural TTS, and Gemini Multimodal vision.
                       </p>
                       <div className="starter-prompts-grid">
-                        <button 
+                        <button
+                          className="starter-prompt-card"
+                          onClick={() => handleSendMessage("Generate a comprehensive PDF report on Distributed Systems & Event-Driven Architecture")}
+                        >
+                          <span className="starter-title">Generate PDF Report</span>
+                          <span className="starter-desc">Autonomous multi-section executive document with download link</span>
+                        </button>
+
+                        <button
+                          className="starter-prompt-card"
+                          onClick={() => handleSendMessage("Make an animated video presentation explaining how Apache Kafka works")}
+                        >
+                          <span className="starter-title">Generate Video Presentation</span>
+                          <span className="starter-desc">Live Canvas HTML5 multi-scene video player with synchronized voiceover</span>
+                        </button>
+
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Analyze my codebase architecture and suggest optimizations")}
                         >
@@ -1891,28 +2151,12 @@ export default function App() {
                           <span className="starter-desc">Review modular design, speed, and backend endpoints</span>
                         </button>
 
-                        <button 
+                        <button
                           className="starter-prompt-card"
                           onClick={() => handleSendMessage("Add task to Notion: Complete multimodal AI agent refactoring")}
                         >
                           <span className="starter-title">Update Notion Workspace</span>
                           <span className="starter-desc">Create or update tasks and read workspace pages</span>
-                        </button>
-
-                        <button 
-                          className="starter-prompt-card"
-                          onClick={() => handleSendMessage("Check the weather in Tokyo and tell me if it will rain today")}
-                        >
-                          <span className="starter-title">Live Weather & Services</span>
-                          <span className="starter-desc">Real-time weather forecasts, calendars, and emails</span>
-                        </button>
-
-                        <button 
-                          className="starter-prompt-card"
-                          onClick={startVoiceCall}
-                        >
-                          <span className="starter-title">Gemini Live Voice Mode</span>
-                          <span className="starter-desc">Talk hands-free with real-time neural speech and visualizer</span>
                         </button>
                       </div>
                     </>
@@ -1940,7 +2184,7 @@ export default function App() {
                                     <img src={att.data} alt={att.name} className="attachment-thumb-img" />
                                   ) : (
                                     <div className="attachment-file-icon">
-                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg>
                                       <span>{att.name}</span>
                                     </div>
                                   )}
@@ -1952,7 +2196,7 @@ export default function App() {
                           {/* Text content with Artifact extraction and Open Canvas action */}
                           <div className="message-text">
                             {msg.sender === 'aisia' ? (
-                              <ChatMessageContent 
+                              <ChatMessageContent
                                 text={msg.text || (msg.isStreaming ? 'Thinking...' : '')}
                                 isStreaming={msg.isStreaming}
                                 toolSteps={msg.toolSteps}
@@ -1969,211 +2213,231 @@ export default function App() {
                             )}
                           </div>
 
-                      {/* Footer Actions */}
-                      {msg.sender === 'aisia' && !msg.isStreaming && msg.text && (
-                        <div className="message-actions">
-                          <button 
-                            className="msg-action-btn"
-                            onClick={() => navigator.clipboard.writeText(msg.text)}
-                            title="Copy response"
-                          >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                            <span>Copy</span>
-                          </button>
-                          <button 
-                            className="msg-action-btn"
-                            onClick={() => replayAudio(msg.text)}
-                            title="Play neural voice audio"
-                          >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                            <span>Listen</span>
-                          </button>
+                          {/* Footer Actions */}
+                          {msg.sender === 'aisia' && !msg.isStreaming && msg.text && (
+                            <div className="message-actions">
+                              <button
+                                className="msg-action-btn"
+                                onClick={() => navigator.clipboard.writeText(msg.text)}
+                                title="Copy response"
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                                <span>Copy</span>
+                              </button>
+                              <button
+                                className={`msg-action-btn ${isSpeaking && activeSpeechText === msg.text ? 'active' : ''}`}
+                                onClick={() => replayAudio(msg.text)}
+                                title={isSpeaking && activeSpeechText === msg.text ? "Stop playback" : "Play neural voice audio"}
+                              >
+                                {isSpeaking && activeSpeechText === msg.text ? (
+                                  <>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                                      <rect x="6" y="6" width="12" height="12" rx="2" />
+                                    </svg>
+                                    <span>Stop</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" /></svg>
+                                    <span>Listen</span>
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                className="msg-action-btn"
+                                onClick={() => handleExportMessageAsPdf(msg)}
+                                title="Export as Executive PDF Document"
+                                disabled={exportingPdfId === msg.id}
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><polyline points="9 15 12 18 15 15" /></svg>
+                                <span>{exportingPdfId === msg.id ? 'Exporting...' : 'PDF'}</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {msg.sender === 'user' && (
+                          <div className="message-avatar user-avatar-msg">
+                            <span>{currentUser.charAt(0).toUpperCase()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Status Indicator */}
+                  {statusMessage && (
+                    <div className="status-pill-banner">
+                      <div className="status-spinner"></div>
+                      <span>{statusMessage}</span>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
+
+            {/* FLOATING BOTTOM INPUT AREA (ChatGPT style) */}
+            <div className="gpt-input-container">
+              <div className="gpt-input-box">
+                {/* Staged Attachments Preview */}
+                {attachments.length > 0 && (
+                  <div className="staged-attachments-row">
+                    {attachments.map((att, idx) => (
+                      <div key={idx} className="staged-item">
+                        {att.mime.startsWith('image/') ? (
+                          <img src={att.data} alt={att.name} className="staged-thumb" />
+                        ) : (
+                          <div className="staged-file-badge">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                            <span>{att.name}</span>
+                          </div>
+                        )}
+                        <button className="staged-remove-btn" onClick={() => removeAttachment(idx)}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Expanding Textarea Top Row */}
+                <div className="chat-textarea-container">
+                  <textarea
+                    ref={textareaRef}
+                    className="chat-textarea"
+                    rows={1}
+                    placeholder={
+                      agentMode === 'deep_research'
+                        ? "Deep Research: Ask any complex question to crawl web, cross-cite sources, or sync to Notion..."
+                        : agentMode === 'coding'
+                          ? "Coding Agent: Ask to build web apps, components, diagrams, or edit code in Canvas..."
+                          : "Message Aisia or ask to run tools (Notion, Vector DB, Web, Weather)..."
+                    }
+                    value={inputText}
+                    onChange={handleTextareaInput}
+                    onKeyDown={handleKeyDown}
+                  />
+                </div>
+
+                {/* Bottom Actions Bar (ChatGPT 4o / Claude style) */}
+                <div className="input-bottom-actions">
+                  <div className="input-actions-left">
+                    {/* Multimodal Attachment Button */}
+                    <button
+                      type="button"
+                      className="input-tool-pill-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Attach images, PDFs, or code files"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14" /></svg>
+                      <span>Attach</span>
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      multiple
+                      accept="image/*,.pdf,.txt,.md,.json"
+                      style={{ display: 'none' }}
+                    />
+
+                    {/* Multilingual Language Pill */}
+                    <div className="input-lang-wrapper">
+                      <button
+                        type="button"
+                        className="input-lang-pill-btn"
+                        onClick={() => setShowLangMenu(!showLangMenu)}
+                        title={`Active Language: ${LANGUAGES.find(l => l.code === speechLang)?.name}`}
+                      >
+                        <span className="lang-code">{LANGUAGES.find(l => l.code === speechLang)?.label}</span>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
+                      </button>
+                      {showLangMenu && (
+                        <div className="lang-dropdown-menu">
+                          <div className="lang-dropdown-header">Spoken & Synthesis Language</div>
+                          <div className="lang-options-scroll">
+                            {LANGUAGES.map(l => (
+                              <div
+                                key={l.code}
+                                className={`lang-option ${l.code === speechLang ? 'selected' : ''}`}
+                                onClick={() => {
+                                  setSpeechLang(l.code)
+                                  localStorage.setItem('aisia_speech_lang', l.code)
+                                  setShowLangMenu(false)
+                                  if (recognitionRef.current) {
+                                    recognitionRef.current.lang = l.code
+                                  }
+                                }}
+                              >
+                                <span className="opt-lang-tag">{l.label}</span>
+                                <span className="opt-name">{l.name}</span>
+                                {l.code === speechLang && <span className="opt-check">✓</span>}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
+                  </div>
 
-                    {msg.sender === 'user' && (
-                      <div className="message-avatar user-avatar-msg">
-                        <span>{currentUser.charAt(0).toUpperCase()}</span>
-                      </div>
-                    )}
+                  <div className="input-actions-right">
+                    {/* Audio-reactive Mic Speech-to-Text Button */}
+                    <button
+                      type="button"
+                      className={`input-tool-pill-btn mic-btn ${isRecording ? 'recording' : ''}`}
+                      onClick={toggleRecording}
+                      title={isRecording ? "Stop voice input" : `Speak in ${LANGUAGES.find(l => l.code === speechLang)?.name}`}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="23" />
+                        <line x1="8" y1="23" x2="16" y2="23" />
+                      </svg>
+                      {isRecording && <span className="mic-live-dot"></span>}
+                    </button>
+
+                    {/* Circular Send Arrow Button */}
+                    <button
+                      type="button"
+                      className={`send-arrow-btn ${inputText.trim() || attachments.length > 0 ? 'active' : ''}`}
+                      onClick={() => handleSendMessage()}
+                      disabled={(!inputText.trim() && attachments.length === 0) || isProcessing}
+                      title="Send message"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                    </button>
                   </div>
                 </div>
-              ))}
-
-              {/* Status Indicator */}
-              {statusMessage && (
-                <div className="status-pill-banner">
-                  <div className="status-spinner"></div>
-                  <span>{statusMessage}</span>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
+              </div>
+              <div className="input-disclaimer">
+                Aisia can make mistakes. Verify important workspace tasks and decisions.
+              </div>
             </div>
+          </div>
+
+          {/* SPLIT-SCREEN / SLIDE-OUT CODING ARTIFACTS CANVAS */}
+          {isCanvasOpen && (
+            <CodingCanvas
+              artifact={activeArtifact}
+              isOpen={isCanvasOpen}
+              onClose={() => setIsCanvasOpen(false)}
+              speechLang={speechLang}
+              onUpdateCode={(newCode: string) => {
+                if (activeArtifact) {
+                  setActiveArtifact({ ...activeArtifact, code: newCode })
+                }
+              }}
+              onUpdateArtifact={(updated) => {
+                setActiveArtifact(updated)
+              }}
+              onPromptAgent={(prompt: string) => {
+                handleSendMessage(prompt)
+              }}
+            />
           )}
         </div>
-
-        {/* FLOATING BOTTOM INPUT AREA (ChatGPT style) */}
-        <div className="gpt-input-container">
-          <div className="gpt-input-box">
-            {/* Staged Attachments Preview */}
-            {attachments.length > 0 && (
-              <div className="staged-attachments-row">
-                {attachments.map((att, idx) => (
-                  <div key={idx} className="staged-item">
-                    {att.mime.startsWith('image/') ? (
-                      <img src={att.data} alt={att.name} className="staged-thumb" />
-                    ) : (
-                      <div className="staged-file-badge">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        <span>{att.name}</span>
-                      </div>
-                    )}
-                    <button className="staged-remove-btn" onClick={() => removeAttachment(idx)}>×</button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Expanding Textarea Top Row */}
-            <div className="chat-textarea-container">
-              <textarea
-                ref={textareaRef}
-                className="chat-textarea"
-                rows={1}
-                placeholder={
-                  agentMode === 'deep_research'
-                    ? "Deep Research: Ask any complex question to crawl web, cross-cite sources, or sync to Notion..."
-                    : agentMode === 'coding'
-                    ? "Coding Agent: Ask to build web apps, components, diagrams, or edit code in Canvas..."
-                    : "Message Aisia or ask to run tools (Notion, Vector DB, Web, Weather)..."
-                }
-                value={inputText}
-                onChange={handleTextareaInput}
-                onKeyDown={handleKeyDown}
-              />
-            </div>
-
-            {/* Bottom Actions Bar (ChatGPT 4o / Claude style) */}
-            <div className="input-bottom-actions">
-              <div className="input-actions-left">
-                {/* Multimodal Attachment Button */}
-                <button 
-                  type="button"
-                  className="input-tool-pill-btn" 
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Attach images, PDFs, or code files"
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14"/></svg>
-                  <span>Attach</span>
-                </button>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileSelect} 
-                  multiple 
-                  accept="image/*,.pdf,.txt,.md,.json" 
-                  style={{ display: 'none' }} 
-                />
-
-                {/* Multilingual Language Pill */}
-                <div className="input-lang-wrapper">
-                  <button 
-                    type="button"
-                    className="input-lang-pill-btn"
-                    onClick={() => setShowLangMenu(!showLangMenu)}
-                    title={`Active Language: ${LANGUAGES.find(l => l.code === speechLang)?.name}`}
-                  >
-                    <span className="lang-code">{LANGUAGES.find(l => l.code === speechLang)?.label}</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
-                  </button>
-                  {showLangMenu && (
-                    <div className="lang-dropdown-menu">
-                      <div className="lang-dropdown-header">Spoken & Synthesis Language</div>
-                      <div className="lang-options-scroll">
-                        {LANGUAGES.map(l => (
-                          <div 
-                            key={l.code}
-                            className={`lang-option ${l.code === speechLang ? 'selected' : ''}`}
-                            onClick={() => {
-                              setSpeechLang(l.code)
-                              localStorage.setItem('aisia_speech_lang', l.code)
-                              setShowLangMenu(false)
-                              if (recognitionRef.current) {
-                                recognitionRef.current.lang = l.code
-                              }
-                            }}
-                          >
-                            <span className="opt-lang-tag">{l.label}</span>
-                            <span className="opt-name">{l.name}</span>
-                            {l.code === speechLang && <span className="opt-check">✓</span>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="input-actions-right">
-                {/* Audio-reactive Mic Speech-to-Text Button */}
-                <button 
-                  type="button"
-                  className={`input-tool-pill-btn mic-btn ${isRecording ? 'recording' : ''}`}
-                  onClick={toggleRecording}
-                  title={isRecording ? "Stop voice input" : `Speak in ${LANGUAGES.find(l => l.code === speechLang)?.name}`}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                    <line x1="12" y1="19" x2="12" y2="23"/>
-                    <line x1="8" y1="23" x2="16" y2="23"/>
-                  </svg>
-                  {isRecording && <span className="mic-live-dot"></span>}
-                </button>
-
-                {/* Circular Send Arrow Button */}
-                <button 
-                  type="button"
-                  className={`send-arrow-btn ${inputText.trim() || attachments.length > 0 ? 'active' : ''}`}
-                  onClick={() => handleSendMessage()}
-                  disabled={(!inputText.trim() && attachments.length === 0) || isProcessing}
-                  title="Send message"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="input-disclaimer">
-            Aisia can make mistakes. Verify important workspace tasks and decisions.
-          </div>
-        </div>
-      </div>
-
-      {/* SPLIT-SCREEN / SLIDE-OUT CODING ARTIFACTS CANVAS */}
-      {isCanvasOpen && (
-        <CodingCanvas
-          artifact={activeArtifact}
-          isOpen={isCanvasOpen}
-          onClose={() => setIsCanvasOpen(false)}
-          speechLang={speechLang}
-          onUpdateCode={(newCode: string) => {
-            if (activeArtifact) {
-              setActiveArtifact({ ...activeArtifact, code: newCode })
-            }
-          }}
-          onUpdateArtifact={(updated) => {
-            setActiveArtifact(updated)
-          }}
-          onPromptAgent={(prompt: string) => {
-            handleSendMessage(prompt)
-          }}
-        />
-      )}
-    </div>
-  </main>
+      </main>
 
       {/* --- MODAL 1: IMMERSIVE GEMINI LIVE VOICE CALL OVERLAY --- */}
       {activeModal === 'voice-call' && (
@@ -2194,7 +2458,7 @@ export default function App() {
 
             {/* In-Call Language Selector */}
             <div className="voice-call-lang-select-box">
-              <select 
+              <select
                 className="voice-call-lang-dropdown"
                 value={speechLang}
                 onChange={(e) => {
@@ -2211,12 +2475,12 @@ export default function App() {
               </select>
             </div>
 
-            <button 
+            <button
               className="voice-call-close-btn"
               onClick={endVoiceCall}
               title="End Voice Call"
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
             </button>
           </div>
 
@@ -2225,7 +2489,7 @@ export default function App() {
             {/* Visualizer Area */}
             <div className="voice-call-center">
               <div className="orb-call-wrapper">
-                <VoiceOrb 
+                <VoiceOrb
                   state={currentOrbState}
                   size={isInCallChatOpen ? 200 : 340}
                   theme={orbTheme}
@@ -2242,15 +2506,15 @@ export default function App() {
               </div>
 
               <div className="voice-state-title">
-                {isSpeaking 
-                  ? 'Aisia is speaking • Speak or type to interrupt' 
-                  : isProcessing 
-                  ? 'Aisia is thinking...' 
-                  : isMuted 
-                  ? (isInCallChatOpen ? 'Microphone muted • Type freely below' : 'Microphone muted (tap mic to speak)') 
-                  : isRecording 
-                  ? 'Connected • Listening to you...' 
-                  : 'Connecting...'}
+                {isSpeaking
+                  ? 'Aisia is speaking • Speak or type to interrupt'
+                  : isProcessing
+                    ? 'Aisia is thinking...'
+                    : isMuted
+                      ? (isInCallChatOpen ? 'Microphone muted • Type freely below' : 'Microphone muted (tap mic to speak)')
+                      : isRecording
+                        ? 'Connected • Listening to you...'
+                        : 'Connecting...'}
               </div>
 
               {liveTranscription && !isInCallChatOpen && (
@@ -2266,16 +2530,16 @@ export default function App() {
                 <div className="in-call-drawer-header">
                   <div className="drawer-header-left">
                     <span className="drawer-icon">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                     </span>
                     <div>
                       <div className="drawer-title">Quiet Messaging Mode</div>
                       <div className="drawer-sub">Type your request if you can't talk aloud</div>
                     </div>
                   </div>
-                  <button 
-                    type="button" 
-                    className="drawer-close-btn" 
+                  <button
+                    type="button"
+                    className="drawer-close-btn"
                     onClick={() => setIsInCallChatOpen(false)}
                     title="Minimize chat drawer"
                   >
@@ -2288,7 +2552,7 @@ export default function App() {
                   {messages.length === 0 ? (
                     <div className="drawer-empty-state">
                       <div className="drawer-empty-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                       </div>
                       <div className="drawer-empty-bold">In a quiet room or meeting?</div>
                       <div className="drawer-empty-text">
@@ -2304,10 +2568,11 @@ export default function App() {
                         </div>
                         <div className="bubble-body">
                           {msg.text ? (
-                            <>
-                              <span>{msg.text}</span>
-                              {msg.isStreaming && <span className="typing-cursor" style={{ display: 'inline-block', marginLeft: '4px' }} />}
-                            </>
+                            <ChatMessageContent
+                              text={msg.text}
+                              isStreaming={msg.isStreaming}
+                              onOpenArtifact={setActiveArtifact}
+                            />
                           ) : msg.isStreaming ? (
                             <span className="bubble-streaming-indicator">
                               <span className="typing-dot"></span>
@@ -2329,9 +2594,9 @@ export default function App() {
                     "Explain this simply",
                     "What are our action items?"
                   ].map(prompt => (
-                    <button 
+                    <button
                       key={prompt}
-                      type="button" 
+                      type="button"
                       className="in-call-chip"
                       onClick={() => handleSendInCallMessage(prompt)}
                       disabled={isProcessing}
@@ -2342,14 +2607,14 @@ export default function App() {
                 </div>
 
                 {/* Floating Typing Form */}
-                <form 
+                <form
                   className="in-call-input-form"
                   onSubmit={(e) => {
                     e.preventDefault()
                     handleSendInCallMessage()
                   }}
                 >
-                  <input 
+                  <input
                     type="text"
                     className="in-call-text-input"
                     placeholder="Type a message to Aisia (can't talk right now)..."
@@ -2357,15 +2622,15 @@ export default function App() {
                     onChange={(e) => setInCallInput(e.target.value)}
                     autoFocus
                   />
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="in-call-send-btn"
                     disabled={!inCallInput.trim() || isProcessing}
                     title="Send message (Enter)"
                   >
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                      <line x1="22" y1="2" x2="11" y2="13"/>
-                      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                      <line x1="22" y1="2" x2="11" y2="13" />
+                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
                     </svg>
                   </button>
                 </form>
@@ -2376,59 +2641,59 @@ export default function App() {
           {/* Voice Call Action Controls */}
           <div className="voice-call-controls">
             {/* Keyboard / Text Chat Button (ChatGPT-style in-call messaging) */}
-            <button 
+            <button
               type="button"
               className={`call-ctrl-btn chat-toggle-btn ${isInCallChatOpen ? 'active-chat' : ''}`}
               onClick={() => setIsInCallChatOpen(prev => !prev)}
               title={isInCallChatOpen ? "Hide chat drawer" : "Message Aisia (if you can't speak out loud)"}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </button>
 
             {/* Mute / Unmute Button */}
-            <button 
+            <button
               className={`call-ctrl-btn ${isMuted ? 'muted' : 'active-mic'}`}
               onClick={toggleMute}
               title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
             >
               {isMuted ? (
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                  <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
-                  <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                  <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+                  <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
                 </svg>
               ) : (
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
                 </svg>
               )}
             </button>
 
             {/* Instant Interrupt Button */}
             {isSpeaking && (
-              <button 
+              <button
                 className="call-ctrl-btn interrupt-btn"
                 onClick={stopSpeaking}
                 title="Interrupt / Barge-in"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="6" width="12" height="12"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="6" width="12" height="12" /></svg>
               </button>
             )}
 
             {/* End Call Button */}
-            <button 
+            <button
               className="call-ctrl-btn end-call-btn"
               onClick={endVoiceCall}
               title="Hang up call"
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91" /></svg>
             </button>
           </div>
         </div>
@@ -2449,13 +2714,13 @@ export default function App() {
               </div>
 
               <nav className="settings-sidebar-nav">
-                <button 
+                <button
                   type="button"
                   className={`settings-nav-item ${settingsTab === 'voice' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('voice')}
                 >
                   <span className="nav-item-icon">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
                   </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">Voice & Visualizer</span>
@@ -2463,13 +2728,13 @@ export default function App() {
                   </div>
                 </button>
 
-                <button 
+                <button
                   type="button"
                   className={`settings-nav-item ${settingsTab === 'persona' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('persona')}
                 >
                   <span className="nav-item-icon">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                   </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">Persona & Emotion</span>
@@ -2477,13 +2742,13 @@ export default function App() {
                   </div>
                 </button>
 
-                <button 
+                <button
                   type="button"
                   className={`settings-nav-item ${settingsTab === 'memory' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('memory')}
                 >
                   <span className="nav-item-icon">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2" /><rect x="9" y="9" width="6" height="6" /><line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" /><line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" /><line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="14" x2="23" y2="14" /><line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" /></svg>
                   </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">Autonomous Memory</span>
@@ -2491,13 +2756,13 @@ export default function App() {
                   </div>
                 </button>
 
-                <button 
+                <button
                   type="button"
                   className={`settings-nav-item ${settingsTab === 'integrations' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('integrations')}
                 >
                   <span className="nav-item-icon">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24" /></svg>
                   </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">MCP Hub & Tools</span>
@@ -2505,13 +2770,13 @@ export default function App() {
                   </div>
                 </button>
 
-                <button 
+                <button
                   type="button"
                   className={`settings-nav-item ${settingsTab === 'system' ? 'active' : ''}`}
                   onClick={() => setSettingsTab('system')}
                 >
                   <span className="nav-item-icon">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
                   </span>
                   <div className="nav-item-text">
                     <span className="nav-item-title">Engine & System</span>
@@ -2550,9 +2815,9 @@ export default function App() {
                     {settingsTab === 'system' && 'Review neural TTS stream latency benchmarks, database health, and active AI model capabilities.'}
                   </p>
                 </div>
-                <button 
+                <button
                   type="button"
-                  className="settings-studio-close" 
+                  className="settings-studio-close"
                   onClick={() => setActiveModal('none')}
                   title="Close preferences (Esc)"
                 >
@@ -2567,7 +2832,7 @@ export default function App() {
                     <div className="setting-group">
                       <label className="setting-label">Voice Model Persona</label>
                       <p className="setting-desc">Ultra-natural human neural voice via Microsoft Edge Cognitive Services.</p>
-                      <select 
+                      <select
                         className="setting-select"
                         value={selectedVoice}
                         onChange={(e) => {
@@ -2584,7 +2849,7 @@ export default function App() {
                     <div className="setting-group">
                       <label className="setting-label">Primary Speech & Conversation Language</label>
                       <p className="setting-desc">Language used by your microphone for real-time speech recognition. Aisia will reply natively in this language.</p>
-                      <select 
+                      <select
                         className="setting-select"
                         value={speechLang}
                         onChange={(e) => {
@@ -2606,7 +2871,7 @@ export default function App() {
                       <p className="setting-desc">The official iridescent orb visualizer style used during Live Voice conversations.</p>
                       <div className="orb-theme-selector-grid">
                         {ORB_THEMES.map(theme => (
-                          <div 
+                          <div
                             key={theme.id}
                             className={`theme-card ${orbTheme === theme.id ? 'active' : ''}`}
                             onClick={() => {
@@ -2623,10 +2888,10 @@ export default function App() {
 
                     <div className="setting-group">
                       <label className="setting-checkbox-row">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={handsFreeMode}
-                          onChange={(e) => setHandsFreeMode(e.target.checked)} 
+                          onChange={(e) => setHandsFreeMode(e.target.checked)}
                         />
                         <span>Hands-free conversational mode (automatically re-arm microphone after Aisia finishes speaking)</span>
                       </label>
@@ -2652,7 +2917,7 @@ export default function App() {
                           const isAudioPlaying = previewAudioPlaying === preset.id
 
                           return (
-                            <div 
+                            <div
                               key={preset.id}
                               className={`persona-card ${isSelected ? 'active' : ''}`}
                               onClick={() => applyPersona(preset)}
@@ -2681,7 +2946,7 @@ export default function App() {
                               </div>
 
                               <div className="persona-actions-row" onClick={e => e.stopPropagation()}>
-                                <button 
+                                <button
                                   type="button"
                                   className="persona-select-btn"
                                   onClick={() => applyPersona(preset)}
@@ -2689,7 +2954,7 @@ export default function App() {
                                   {isSelected ? '✓ Active Persona' : 'Apply Persona'}
                                 </button>
 
-                                <button 
+                                <button
                                   type="button"
                                   className={`persona-preview-audio-btn ${isAudioPlaying ? 'playing' : ''}`}
                                   onClick={() => playVoicePreview(preset.id)}
@@ -2707,7 +2972,7 @@ export default function App() {
                                     </>
                                   ) : (
                                     <>
-                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /></svg>
                                       <span>Test Audio</span>
                                     </>
                                   )}
@@ -2734,7 +2999,7 @@ export default function App() {
                               {voicePitch} — {getPitchLabel(voicePitch)}
                             </span>
                           </div>
-                          <input 
+                          <input
                             type="range"
                             min="-10"
                             max="10"
@@ -2756,7 +3021,7 @@ export default function App() {
                               { val: '+2Hz', label: 'Warm (+2Hz)' },
                               { val: '+6Hz', label: 'Lively (+6Hz)' }
                             ].map(opt => (
-                              <button 
+                              <button
                                 key={opt.val}
                                 type="button"
                                 className={`quick-pitch-btn ${voicePitch === opt.val ? 'active' : ''}`}
@@ -2778,7 +3043,7 @@ export default function App() {
                           </div>
                           <div className="speed-buttons-row">
                             {['-15%', '-5%', '+0%', '+10%', '+20%'].map(speed => (
-                              <button 
+                              <button
                                 key={speed}
                                 type="button"
                                 className={`speed-pill ${voiceSpeed === speed ? 'active' : ''}`}
@@ -2793,7 +3058,7 @@ export default function App() {
                           </div>
                         </div>
 
-                        <button 
+                        <button
                           type="button"
                           className={`test-settings-audio-btn ${previewAudioPlaying === 'custom' ? 'playing' : ''}`}
                           onClick={() => playVoicePreview('custom', voicePitch, voiceSpeed, "Hello! This is a live preview test of your current custom pitch and pacing settings.")}
@@ -2810,7 +3075,7 @@ export default function App() {
                             </>
                           ) : (
                             <>
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" /></svg>
                               <span>Test Current Voice Settings (Pitch: {voicePitch}, Rate: {voiceSpeed})</span>
                             </>
                           )}
@@ -2826,7 +3091,7 @@ export default function App() {
                     <div className="setting-group">
                       <label className="setting-label">Stored Facts & Autonomous Memory</label>
                       <p className="setting-desc">Aisia autonomously remembers key facts about you across all sessions via local SQLite database.</p>
-                      
+
                       <div className="memories-list">
                         {savedMemories.length === 0 ? (
                           <div className="empty-sub">No memories saved yet. Talk to Aisia to populate automatically.</div>
@@ -2838,13 +3103,13 @@ export default function App() {
                                 <span className="memory-divider">:</span>
                                 <span className="memory-val">{m.value}</span>
                               </div>
-                              <button 
-                                type="button" 
-                                className="memory-delete-btn" 
+                              <button
+                                type="button"
+                                className="memory-delete-btn"
                                 onClick={() => handleDeleteMemory(m.id)}
                                 title="Delete fact"
                               >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                               </button>
                             </div>
                           ))
@@ -2855,17 +3120,17 @@ export default function App() {
                     <div className="setting-group">
                       <label className="setting-label">Add Fact Manually</label>
                       <div className="add-memory-row">
-                        <input 
-                          type="text" 
-                          placeholder="Key (e.g. role or preferred_framework)" 
-                          className="setting-input" 
+                        <input
+                          type="text"
+                          placeholder="Key (e.g. role or preferred_framework)"
+                          className="setting-input"
                           value={newMemoryKey}
                           onChange={e => setNewMemoryKey(e.target.value)}
                         />
-                        <input 
-                          type="text" 
-                          placeholder="Value (e.g. Principal Architect or React 19)" 
-                          className="setting-input" 
+                        <input
+                          type="text"
+                          placeholder="Value (e.g. Principal Architect or React 19)"
+                          className="setting-input"
                           value={newMemoryVal}
                           onChange={e => setNewMemoryVal(e.target.value)}
                         />
@@ -2894,13 +3159,13 @@ export default function App() {
                       </div>
 
                       <div className="mcp-banner-actions">
-                        <button 
+                        <button
                           type="button"
                           className="mcp-add-server-btn"
                           onClick={() => setShowAddMcpModal(true)}
                           title="Register an external stdio or SSE MCP server"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
                           <span>Add MCP Server</span>
                         </button>
                       </div>
@@ -2942,10 +3207,10 @@ export default function App() {
                       </div>
 
                       <div className="mcp-search-wrap">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                        <input 
-                          type="text" 
-                          placeholder="Search MCP servers or tools..." 
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                        <input
+                          type="text"
+                          placeholder="Search MCP servers or tools..."
                           className="mcp-search-input"
                           value={mcpSearch}
                           onChange={e => setMcpSearch(e.target.value)}
@@ -2965,10 +3230,10 @@ export default function App() {
                         <form onSubmit={handleAddCustomMcp} className="mcp-form-body">
                           <div className="mcp-form-row">
                             <label>Server Name</label>
-                            <input 
-                              type="text" 
-                              className="setting-input" 
-                              placeholder="e.g. Postgres Staging MCP or Kubernetes Tool" 
+                            <input
+                              type="text"
+                              className="setting-input"
+                              placeholder="e.g. Postgres Staging MCP or Kubernetes Tool"
                               value={newMcpName}
                               onChange={e => setNewMcpName(e.target.value)}
                               required
@@ -2976,10 +3241,10 @@ export default function App() {
                           </div>
                           <div className="mcp-form-row">
                             <label>Transport / Endpoint URL</label>
-                            <input 
-                              type="text" 
-                              className="setting-input" 
-                              placeholder="e.g. http://localhost:3000/sse or stdio command" 
+                            <input
+                              type="text"
+                              className="setting-input"
+                              placeholder="e.g. http://localhost:3000/sse or stdio command"
                               value={newMcpEndpoint}
                               onChange={e => setNewMcpEndpoint(e.target.value)}
                               required
@@ -2988,7 +3253,7 @@ export default function App() {
                           <div className="mcp-form-row-duo">
                             <div>
                               <label>Category</label>
-                              <select 
+                              <select
                                 className="setting-select"
                                 value={newMcpCategory}
                                 onChange={e => setNewMcpCategory(e.target.value)}
@@ -3002,10 +3267,10 @@ export default function App() {
                             </div>
                             <div>
                               <label>Description (Optional)</label>
-                              <input 
-                                type="text" 
-                                className="setting-input" 
-                                placeholder="Brief capability summary" 
+                              <input
+                                type="text"
+                                className="setting-input"
+                                placeholder="Brief capability summary"
                                 value={newMcpDesc}
                                 onChange={e => setNewMcpDesc(e.target.value)}
                               />
@@ -3029,8 +3294,8 @@ export default function App() {
                         .filter(server => {
                           const matchesCategory = mcpFilter === 'All' || server.category === mcpFilter
                           const q = mcpSearch.toLowerCase()
-                          const matchesSearch = !q || 
-                            server.name.toLowerCase().includes(q) || 
+                          const matchesSearch = !q ||
+                            server.name.toLowerCase().includes(q) ||
                             server.description.toLowerCase().includes(q) ||
                             (server.tools && server.tools.some(t => t.name.toLowerCase().includes(q) || t.display_name.toLowerCase().includes(q)))
                           return matchesCategory && matchesSearch
@@ -3042,7 +3307,7 @@ export default function App() {
                               <div className="mcp-server-header" onClick={() => setExpandedMcpId(isExpanded ? null : server.id)}>
                                 <div className="mcp-server-left">
                                   <span className="mcp-server-icon">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/></svg>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24" /></svg>
                                   </span>
                                   <div className="mcp-server-info">
                                     <div className="mcp-server-name-row">
@@ -3059,8 +3324,8 @@ export default function App() {
                                     {server.status === 'connected' ? 'Connected' : 'Ready'}
                                   </span>
 
-                                  <button 
-                                    type="button" 
+                                  <button
+                                    type="button"
                                     className="mcp-tools-toggle-btn"
                                     onClick={(e) => {
                                       e.stopPropagation()
@@ -3068,16 +3333,16 @@ export default function App() {
                                     }}
                                   >
                                     <span>{server.tools?.length || 0} Tools</span>
-                                    <svg 
-                                      width="12" 
-                                      height="12" 
-                                      viewBox="0 0 24 24" 
-                                      fill="none" 
-                                      stroke="currentColor" 
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
                                       strokeWidth="2.5"
                                       style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}
                                     >
-                                      <polyline points="6 9 12 15 18 9"/>
+                                      <polyline points="6 9 12 15 18 9" />
                                     </svg>
                                   </button>
                                 </div>
@@ -3102,7 +3367,7 @@ export default function App() {
                                               <code className="mcp-tool-code-name">{tool.name}</code>
                                             </div>
 
-                                            <button 
+                                            <button
                                               type="button"
                                               className={`mcp-tool-run-btn ${isRunning ? 'running' : ''}`}
                                               disabled={isRunning}
@@ -3128,8 +3393,8 @@ export default function App() {
                                             <div className="mcp-tool-result-box">
                                               <div className="mcp-result-header">
                                                 <span className="mcp-result-status-ok">● Live MCP Output</span>
-                                                <button 
-                                                  type="button" 
+                                                <button
+                                                  type="button"
                                                   className="mcp-copy-result-btn"
                                                   onClick={() => navigator.clipboard.writeText(JSON.stringify(testResult, null, 2))}
                                                   title="Copy output to clipboard"
@@ -3162,7 +3427,7 @@ export default function App() {
                       <div className="system-card">
                         <div className="sys-card-top">
                           <span className="sys-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2" /><rect x="9" y="9" width="6" height="6" /><line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" /><line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" /><line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="14" x2="23" y2="14" /><line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" /></svg>
                           </span>
                           <span className="sys-status live">Active</span>
                         </div>
@@ -3174,7 +3439,7 @@ export default function App() {
                       <div className="system-card">
                         <div className="sys-card-top">
                           <span className="sys-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
                           </span>
                           <span className="sys-status live">{latencyHud}</span>
                         </div>
@@ -3186,7 +3451,7 @@ export default function App() {
                       <div className="system-card">
                         <div className="sys-card-top">
                           <span className="sys-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg>
                           </span>
                           <span className="sys-status live">Connected</span>
                         </div>
@@ -3198,7 +3463,7 @@ export default function App() {
                       <div className="system-card">
                         <div className="sys-card-top">
                           <span className="sys-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
                           </span>
                           <span className="sys-status live">{documents.length} Docs</span>
                         </div>
@@ -3245,8 +3510,8 @@ export default function App() {
             </div>
             <div className="modal-body">
               <div className="notion-add-box">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="setting-input"
                   placeholder="New task for Notion (e.g. 'Deploy production bundle')..."
                   value={notionTaskText}
@@ -3262,7 +3527,7 @@ export default function App() {
                 {notionPages.map((p, i) => (
                   <div key={i} className="notion-page-card">
                     <span className="page-icon">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                     </span>
                     <span className="page-title">{p.title || 'Untitled'}</span>
                     <span className="page-type">{p.type}</span>
@@ -3280,30 +3545,30 @@ export default function App() {
           <div className="modal-dialog modal-dialog-lg" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
                 <span>Universal Multimodal Knowledge Hub</span>
               </div>
               <button className="modal-close" onClick={() => setActiveModal('none')}>×</button>
             </div>
             <div className="modal-body">
               <div className="files-upload-zone" onClick={() => docInputRef.current?.click()}>
-                <input 
-                  type="file"     
-                  ref={docInputRef}               
-                  onChange={handleDocUpload} 
+                <input
+                  type="file"
+                  ref={docInputRef}
+                  onChange={handleDocUpload}
                   accept=".pdf,.mp3,.wav,.m4a,.ogg,.webm,.aac,.flac,.mp4,.mov,.avi,.mkv,.txt,.md,.csv,.json"
-                  style={{ display: 'none' }} 
+                  style={{ display: 'none' }}
                 />
                 <div className="upload-icon-wrapper">
                   {isUploading ? (
                     <div className="spinner-mini" style={{ width: 30, height: 30, borderWidth: 3 }} />
                   ) : (
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
                   )}
                 </div>
                 <div className="upload-main-text">
-                  {isUploading 
-                    ? 'Ingesting, transcribing & indexing into ChromaDB...' 
+                  {isUploading
+                    ? 'Ingesting, transcribing & indexing into ChromaDB...'
                     : 'Click or drop files to ingest into Vector Knowledge Base'}
                 </div>
                 <div className="upload-badges-row">
@@ -3322,7 +3587,7 @@ export default function App() {
                 {documents.length === 0 ? (
                   <div className="files-empty-state">
                     <span className="empty-icon">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
                     </span>
                     <p>No knowledge documents ingested yet.</p>
                     <small>Upload PDF reports, audio recordings, or videos to expand Aisia's long-term intelligence.</small>
@@ -3332,7 +3597,7 @@ export default function App() {
                     <div key={idx} className="file-item-card multimodal-item-card">
                       <div className="file-item-left">
                         <span className="file-icon-badge">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                         </span>
                         <div className="file-details">
                           <div className="file-title-row">
@@ -3350,7 +3615,7 @@ export default function App() {
                           {doc.summary && (
                             <div className="file-summary-preview">
                               <span className="sparkle-icon">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" /></svg>
                               </span>
                               <span className="summary-text">{doc.summary}</span>
                             </div>
@@ -3360,22 +3625,22 @@ export default function App() {
 
                       <div className="file-item-actions">
                         {doc.has_transcript && (
-                          <button 
+                          <button
                             className="doc-inspect-btn"
                             onClick={() => handleViewTranscript(doc.name)}
                             disabled={isLoadingTranscript}
                             title="Inspect generated transcript and scene index"
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
                             <span>{doc.type === 'video' ? 'Scenes' : 'Transcript'}</span>
                           </button>
                         )}
-                        <button 
-                          className="doc-delete-btn" 
+                        <button
+                          className="doc-delete-btn"
                           onClick={(e) => handleDeleteDoc(doc.name, e)}
                           title="Delete from knowledge base"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
                         </button>
                       </div>
                     </div>
@@ -3393,12 +3658,12 @@ export default function App() {
           <div className="modal-dialog transcript-dialog" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                 <span className="transcript-title-text">{selectedDocTranscript.name}</span>
                 <span className="transcript-tag">Multimodal Ingestion</span>
               </div>
               <div className="transcript-header-actions">
-                <button 
+                <button
                   className="transcript-copy-btn"
                   onClick={() => {
                     navigator.clipboard.writeText(selectedDocTranscript.content)
