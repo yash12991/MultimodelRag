@@ -50,6 +50,9 @@ jarvis-rag/jarvis-backend/generated_pdfs/
 generated_pdfs/
 jarvis-rag/jarvis-backend/generated_images/
 generated_images/
+jarvis-rag/jarvis-backend/uploads/
+uploads/
+*.mp3
 
 # OS artifacts
 .DS_Store
