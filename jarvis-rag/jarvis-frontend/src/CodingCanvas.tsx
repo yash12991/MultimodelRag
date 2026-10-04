@@ -123,8 +123,16 @@ export const CodingCanvas: React.FC<CodingCanvasProps> = ({
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false)
   const exportMenuRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const lineNumbersRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const recognitionRef = useRef<any>(null)
   const silenceTimerRef = useRef<any>(null)
+
+  const handleTextareaScroll = () => {
+    if (lineNumbersRef.current && textareaRef.current) {
+      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop
+    }
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -515,8 +523,21 @@ Please apply the requested modification to the project. If modifying existing fi
 
   if (!isOpen || !artifact) return null
 
+  const isReactCapable = files.some(f => 
+    f.name.endsWith('.tsx') || 
+    f.name.endsWith('.jsx') || 
+    f.language === 'jsx' || 
+    f.language === 'tsx' ||
+    f.content.includes('import React') ||
+    f.content.includes("from 'react'") ||
+    f.content.includes('from "react"') ||
+    f.content.includes('export default function') ||
+    f.content.includes('className=')
+  )
+
   const isHtmlCapable = artifact.type === 'html' || 
     artifact.type === 'project' || 
+    isReactCapable ||
     files.some(f => f.name.endsWith('.html') || f.language === 'html')
 
   const isPreviewable = isHtmlCapable || ['svg', 'mermaid'].includes(artifact.type)
@@ -642,10 +663,16 @@ Please apply the requested modification to the project. If modifying existing fi
       fileMap.set(f.name.toLowerCase().replace(/^\.\//, ''), f)
     })
 
-    // 2. Resolve & inline <link rel="stylesheet" href="..."> tags
+    const sanitizeCss = (raw: string) => {
+      return (raw || '')
+        .replace(/@import\s+["']tailwindcss["'];?/gi, '')
+        .replace(/@tailwind\s+[a-zA-Z]+;?/gi, '')
+    }
+
+    // 2. Resolve & inline <link rel="stylesheet" href="..."> or <link href="..." rel="stylesheet"> tags
     const injectedCssFiles = new Set<string>()
 
-    baseHtml = baseHtml.replace(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/gi, (match) => {
+    baseHtml = baseHtml.replace(/<link\s+[^>]*?(?:rel=["']stylesheet["']|href=["'][^"']+\.css["'])[^>]*?>/gi, (match) => {
       const hrefMatch = match.match(/href=["']([^"']+)["']/i)
       if (hrefMatch && hrefMatch[1]) {
         const rawHref = hrefMatch[1].trim()
@@ -660,7 +687,7 @@ Please apply the requested modification to the project. If modifying existing fi
         }
         if (matched) {
           injectedCssFiles.add(matched.name)
-          return `<style data-filename="${matched.name}">\n${matched.content}\n</style>`
+          return `<style data-filename="${matched.name}">\n${sanitizeCss(matched.content)}\n</style>`
         }
       }
       return '' // eliminate 404 broken stylesheet link
@@ -673,7 +700,7 @@ Please apply the requested modification to the project. If modifying existing fi
     )
     if (remainingCss.length > 0) {
       const extraStyles = remainingCss.map(css => 
-        `\n  <style data-filename="${css.name}">\n${css.content}\n  </style>`
+        `\n  <style data-filename="${css.name}">\n${sanitizeCss(css.content)}\n  </style>`
       ).join('')
       if (baseHtml.includes('</head>')) {
         baseHtml = baseHtml.replace('</head>', `${extraStyles}\n</head>`)
@@ -682,7 +709,78 @@ Please apply the requested modification to the project. If modifying existing fi
       }
     }
 
-    // 3. Resolve & inline <script src="..."> tags
+    // Check if this project uses React, TSX, JSX, or Tailwind
+    const isReactProject = files.some(f => 
+      f.name.endsWith('.tsx') || 
+      f.name.endsWith('.jsx') || 
+      f.language === 'jsx' || 
+      f.language === 'tsx' ||
+      f.content.includes('import React') ||
+      f.content.includes("from 'react'") ||
+      f.content.includes('from "react"') ||
+      f.content.includes('export default function')
+    )
+
+    const usesTailwind = isReactProject || files.some(f => 
+      f.content.includes('tailwindcss') ||
+      (f.content.includes('class="') && (
+        f.content.includes('flex') || 
+        f.content.includes('bg-') || 
+        f.content.includes('grid') || 
+        f.content.includes('text-') ||
+        f.content.includes('border-') ||
+        f.content.includes('p-') ||
+        f.content.includes('m-') ||
+        f.content.includes('max-w-')
+      ))
+    )
+
+    // Ensure root container exists for React components
+    if (isReactProject && !baseHtml.includes('id="root"')) {
+      if (baseHtml.includes('</body>')) {
+        baseHtml = baseHtml.replace('</body>', '\n  <div id="root"></div>\n</body>')
+      } else {
+        baseHtml += '\n<div id="root"></div>'
+      }
+    }
+
+    // Auto-inject Tailwind CSS CDN into <head> if needed
+    if (usesTailwind && !baseHtml.includes('cdn.tailwindcss.com')) {
+      const tailwindTag = '\n  <script src="https://cdn.tailwindcss.com"></script>'
+      if (baseHtml.includes('</head>')) {
+        baseHtml = baseHtml.replace('</head>', `${tailwindTag}\n</head>`)
+      } else {
+        baseHtml = `${tailwindTag}\n${baseHtml}`
+      }
+    }
+
+    // Inject ESM Import Map & Babel Standalone compiler for React & TSX components
+    if (isReactProject) {
+      const reactDeps = `
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.2.0",
+      "react/": "https://esm.sh/react@18.2.0/",
+      "react-dom": "https://esm.sh/react-dom@18.2.0",
+      "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+      "lucide-react": "https://esm.sh/lucide-react@0.359.0",
+      "framer-motion": "https://esm.sh/framer-motion@11.0.8",
+      "recharts": "https://esm.sh/recharts@2.12.3",
+      "canvas-confetti": "https://esm.sh/canvas-confetti@1.9.2"
+    }
+  }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+`
+      if (baseHtml.includes('</head>')) {
+        baseHtml = baseHtml.replace('</head>', `${reactDeps}\n</head>`)
+      } else {
+        baseHtml = `${reactDeps}\n${baseHtml}`
+      }
+    }
+
+    // 3. Resolve & inline JavaScript, JSX, and TSX files
     const injectedJsFiles = new Set<string>()
 
     baseHtml = baseHtml.replace(/<script\s+[^>]*src=["']([^"']+)["'][^>]*>\s*<\/script>/gi, (match, src) => {
@@ -692,30 +790,64 @@ Please apply the requested modification to the project. If modifying existing fi
       }
       const cleanSrc = rawSrc.replace(/^\.\//, '').toLowerCase()
       let matched = fileMap.get(cleanSrc)
-      if (!matched && (cleanSrc.endsWith('.js') || cleanSrc.endsWith('.ts') || cleanSrc.includes('script') || cleanSrc.includes('app'))) {
-        matched = files.find(f => f.name.endsWith('.js') || f.name.endsWith('.ts') || f.language === 'javascript' || f.language === 'typescript')
+      if (!matched && (cleanSrc.endsWith('.js') || cleanSrc.endsWith('.ts') || cleanSrc.endsWith('.jsx') || cleanSrc.endsWith('.tsx') || cleanSrc.includes('script') || cleanSrc.includes('app'))) {
+        matched = files.find(f => f.name.endsWith('.js') || f.name.endsWith('.ts') || f.name.endsWith('.jsx') || f.name.endsWith('.tsx') || f.language === 'javascript' || f.language === 'typescript')
       }
       if (matched) {
         injectedJsFiles.add(matched.name)
-        return `<script data-filename="${matched.name}">\n${matched.content}\n</script>`
+        const isBabel = matched.name.endsWith('.tsx') || matched.name.endsWith('.jsx') || matched.content.includes('import React') || matched.content.includes('export default')
+        const scriptType = isBabel ? 'type="text/babel" data-type="module" data-presets="react,typescript"' : ''
+        return `<script ${scriptType} data-filename="${matched.name}">\n${matched.content.replace(/<\/script/gi, '<\\/script')}\n</script>`
       }
       return '' // eliminate 404 broken script link
     })
 
-    // Also inject any remaining JS/TS files not explicitly linked
-    const remainingJs = files.filter(f => 
+    // Also inject any remaining JS/TS/JSX/TSX files not explicitly linked
+    const remainingScripts = files.filter(f => 
       f.name !== htmlFile?.name && 
-      (f.name.endsWith('.js') || f.name.endsWith('.ts') || f.language === 'javascript' || f.language === 'typescript') &&
+      (f.name.endsWith('.js') || f.name.endsWith('.ts') || f.name.endsWith('.jsx') || f.name.endsWith('.tsx') || f.language === 'javascript' || f.language === 'typescript') &&
       !injectedJsFiles.has(f.name)
     )
-    if (remainingJs.length > 0) {
-      const extraScripts = remainingJs.map(js => 
-        `\n  <script data-filename="${js.name}">\n${js.content}\n  </script>`
-      ).join('')
+
+    if (remainingScripts.length > 0) {
+      const scriptTags = remainingScripts.map(scriptFile => {
+        const isBabel = scriptFile.name.endsWith('.tsx') || scriptFile.name.endsWith('.jsx') || scriptFile.content.includes('import React') || scriptFile.content.includes('export default') || scriptFile.content.includes('className=')
+        let codeToInject = scriptFile.content.replace(/<\/script/gi, '<\\/script')
+
+        // If this is a React component with an export default and no explicit mount, auto-mount to #root
+        if (isBabel) {
+          const exportMatch = codeToInject.match(/export\s+default\s+(?:function\s+([a-zA-Z0-9_$]+)|class\s+([a-zA-Z0-9_$]+)|([a-zA-Z0-9_$]+))/i)
+          const compName = exportMatch ? (exportMatch[1] || exportMatch[2] || exportMatch[3]) : 'App'
+          if (!codeToInject.includes('createRoot(') && !codeToInject.includes('ReactDOM.render(')) {
+            codeToInject += `
+\n// Auto-mount React Component to Canvas root container
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+setTimeout(() => {
+  try {
+    const TargetComp = typeof ${compName} !== 'undefined' ? ${compName} : (typeof App !== 'undefined' ? App : null);
+    const rootEl = document.getElementById('root');
+    if (TargetComp && rootEl && !rootEl.__mounted) {
+      rootEl.__mounted = true;
+      const root = createRoot(rootEl);
+      root.render(React.createElement(TargetComp));
+    }
+  } catch (err) {
+    console.error('React mounting error:', err);
+  }
+}, 50);
+`
+          }
+        }
+
+        const scriptType = isBabel ? 'type="text/babel" data-type="module" data-presets="react,typescript"' : ''
+        return `\n  <script ${scriptType} data-filename="${scriptFile.name}">\n${codeToInject}\n  </script>`
+      }).join('')
+
       if (baseHtml.includes('</body>')) {
-        baseHtml = baseHtml.replace('</body>', `${extraScripts}\n</body>`)
+        baseHtml = baseHtml.replace('</body>', `${scriptTags}\n</body>`)
       } else {
-        baseHtml = `${baseHtml}\n${extraScripts}`
+        baseHtml = `${baseHtml}\n${scriptTags}`
       }
     }
 
@@ -727,16 +859,65 @@ Please apply the requested modification to the project. If modifying existing fi
       baseHtml = baseHtml.replace(regex, `$1${encoded}$3`)
     })
 
+    // Global runtime error badge for quick visual feedback
+    const errorListenerScript = `
+<script>
+// Graceful fallback for broken image URLs
+document.addEventListener('error', function(e) {
+  if (e.target && e.target.tagName === 'IMG' && !e.target.__fallbackApplied) {
+    e.target.__fallbackApplied = true;
+    e.target.style.background = '#1e293b';
+    e.target.style.objectFit = 'cover';
+  }
+}, true);
+
+window.addEventListener('error', function(e) {
+  // Ignore resource load failures (images, stylesheets, fonts) and cross-origin "Script error."
+  if (e.target && e.target !== window && (e.target.tagName === 'IMG' || e.target.tagName === 'LINK' || e.target.tagName === 'SCRIPT')) {
+    return;
+  }
+  if (!e.message || e.message === 'Script error.' || e.message === 'Script error') {
+    return;
+  }
+  var b = document.getElementById('__canvas_err_badge');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = '__canvas_err_badge';
+    b.style.cssText = 'position:fixed;bottom:10px;left:10px;right:10px;background:rgba(239,68,68,0.92);color:#fff;padding:8px 12px;border-radius:8px;font-family:monospace;font-size:12px;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.5);display:flex;justify-content:space-between;align-items:center;';
+    var msg = document.createElement('span');
+    msg.textContent = 'Runtime note: ' + e.message;
+    var btn = document.createElement('button');
+    btn.textContent = '✕';
+    btn.style.cssText = 'background:none;border:none;color:#fff;font-weight:bold;cursor:pointer;margin-left:12px;';
+    btn.onclick = function() { b.remove(); };
+    b.appendChild(msg);
+    b.appendChild(btn);
+    document.body.appendChild(b);
+  }
+});
+</script>
+`
+    if (baseHtml.includes('</body>')) {
+      baseHtml = baseHtml.replace('</body>', `${errorListenerScript}\n</body>`)
+    } else {
+      baseHtml = `${baseHtml}\n${errorListenerScript}`
+    }
+
     // 5. Inject Virtual Filesystem (for mock fetch on local data.json) & Client Router (for <a href="about.html">)
     const virtualFilesMap: Record<string, { name: string; content: string; language: string }> = {}
     files.forEach(f => {
       virtualFilesMap[f.name.toLowerCase()] = { name: f.name, content: f.content, language: f.language }
     })
 
+    const safeVirtualFilesJson = JSON.stringify(virtualFilesMap)
+      .replace(/</g, '\\u003c')
+      .replace(/>/g, '\\u003e')
+      .replace(/&/g, '\\u0026')
+
     const runtimeScript = `
 <script id="aisia-multi-file-runtime">
 (function() {
-  var virtualFiles = ${JSON.stringify(virtualFilesMap)};
+  var virtualFiles = ${safeVirtualFilesJson};
 
   // Intercept fetch for local mock files (JSON, CSV, SVG, TXT)
   var _origFetch = window.fetch;
@@ -1204,15 +1385,17 @@ Please apply the requested modification to the project. If modifying existing fi
             ) : (
               /* Multi-File Code View & Interactive Editor */
               <div className="canvas-code-wrapper">
-                <div className="code-editor-line-numbers">
+                <div className="code-editor-line-numbers" ref={lineNumbersRef}>
                   {activeFile.content.split('\n').map((_, idx) => (
                     <span key={idx} className="line-num">{idx + 1}</span>
                   ))}
                 </div>
                 <textarea
+                  ref={textareaRef}
                   className="code-editor-textarea"
                   value={activeFile.content}
                   onChange={(e) => handleCodeChange(e.target.value)}
+                  onScroll={handleTextareaScroll}
                   spellCheck={false}
                 />
               </div>

@@ -204,7 +204,7 @@ def execute_deep_research(user_query: str, username: str = "default") -> Tuple[s
     client = genai.Client(api_key=api_key)
 
     sources_prompt_text = "\n".join(page_excerpts) if page_excerpts else "\n".join([f"[{s['index']}] {s['title']}: {s['snippet']}" for s in indexed_sources])
-    user_context = memory.format_memory_for_system_prompt(username)
+    user_context = memory.format_memory_for_system_prompt(username, query=user_query)
 
     synthesis_instruction = (
         "You are Aisia Deep Research, a premier autonomous intelligence agent inspired by Perplexity Pro.\n"
@@ -235,8 +235,25 @@ def execute_deep_research(user_query: str, username: str = "default") -> Tuple[s
         )
         full_text = res.text.strip()
     except Exception as e:
-        print(f"Synthesis error: {e}")
-        full_text = f"Here is the synthesized research on **{user_query}**:\n\n" + "\n\n".join([f"- [{s['index']}] **{s['title']}**: {s['snippet']}" for s in indexed_sources])
+        print(f"Gemini synthesis error: {e}, falling back to Mistral NeMo...")
+        try:
+            m_key = (os.getenv("MISTRAL_API_KEY") or os.getenv("mistral_key", "")).strip()
+            if m_key:
+                from mistralai import Mistral
+                m_client = Mistral(api_key=m_key)
+                m_res = m_client.chat.complete(
+                    model="open-mistral-nemo",
+                    messages=[
+                        {"role": "system", "content": synthesis_instruction},
+                        {"role": "user", "content": user_prompt}
+                    ]
+                )
+                full_text = m_res.choices[0].message.content.strip()
+            else:
+                raise e
+        except Exception as me:
+            print(f"Mistral synthesis error: {me}")
+            full_text = f"Here is the synthesized research on **{user_query}**:\n\n" + "\n\n".join([f"- [{s['index']}] **{s['title']}**: {s['snippet']}" for s in indexed_sources])
 
     # Extract follow-up questions from output
     follow_ups = []

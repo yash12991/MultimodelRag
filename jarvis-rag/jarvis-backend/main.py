@@ -193,6 +193,11 @@ def get_user_memory(username: str = "default"):
     memories = memory.get_user_memories(username)
     return {"memories": memories}
 
+@app.get("/memory/search")
+def search_memory_endpoint(query: str, username: str = "default"):
+    results = memory.search_user_memories(username, query)
+    return {"results": results}
+
 class MemorySaveRequest(BaseModel):
     key: str
     value: str
@@ -204,17 +209,9 @@ def save_memory_endpoint(request: MemorySaveRequest):
     return {"message": res}
 
 @app.delete("/memory/{memory_id}")
-def delete_memory_endpoint(memory_id: int):
-    try:
-        import database
-        conn = database.get_connection()
-        cur = conn.cursor()
-        cur.execute("DELETE FROM user_memories WHERE id = ?", (memory_id,))
-        conn.commit()
-        conn.close()
-        return {"status": "deleted", "id": memory_id}
-    except Exception as e:
-        return {"error": str(e)}
+def delete_memory_endpoint(memory_id: str):
+    success = memory.delete_user_memory_by_id(memory_id)
+    return {"status": "deleted" if success else "not_found", "id": memory_id}
 
 
 @app.get("/documents")

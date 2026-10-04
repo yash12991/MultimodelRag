@@ -150,6 +150,16 @@ def get_tools_and_llm(model_name: str = "gemini-3.5-flash-lite"):
             name="KnowledgeBase",
             func=rag_engine.query_knowledge_base,
             description="Useful for answering questions based on the uploaded PDFs and private documents."
+        ),
+        Tool(
+            name="Mem0_Memory_Search",
+            func=lambda q: "\n".join([f"- {r['memory']}" for r in __import__('memory').search_user_memories("yash", q, limit=4)]) or "No relevant memories found.",
+            description="Searches user's persistent long-term memories, preferences, and personal details using Mem0 semantic memory."
+        ),
+        Tool(
+            name="Mem0_Memory_Save",
+            func=lambda fact: __import__('memory').save_user_memory("yash", "Fact", fact),
+            description="Explicitly stores a user fact, preference, or detail in Mem0 long-term memory."
         )
     ]
     import notion_tools
@@ -169,6 +179,7 @@ AVAILABLE_MODELS = [
 ]
 
 TOOL_KEYWORDS = [
+    "mem0", "memory", "remember", "recall", "what do you know about me", "my preferences", "who am i",
     "mcp", "protocol", "database", "sql", "tables", "sqlite", "postgres",
     "system info", "cpu", "disk", "hardware", "load average",
     "notion", "workspace note", "my notes", "sprint tasks", "sprint", "todo", "tasks",
@@ -189,7 +200,11 @@ def needs_tool_execution(query: str) -> bool:
         "generate pdf", "make a pdf", "make pdf", "create a pdf", "create pdf", "export as pdf", "pdf report", "download pdf",
         "documentation", "make doc", "create doc", "generate doc", "technical documentation", "docs for", "write documentation",
         "video", "make a video", "create a video", "generate video",
-        "generate image", "make an image", "create an image", "generate an image", "draw an image", "draw a picture", "generate a logo", "make a logo", "generate picture", "create visual"
+        "generate image", "make an image", "create an image", "generate an image", "draw an image", "draw a picture", "generate a logo", "make a logo", "generate picture", "create visual",
+        "multi-file project:", "modification request:", "voice/speech modification", "current active file",
+        "app.tsx", "index.html", "styles.css", "app.js", "<!-- filename:", "/* filename:", "// filename:",
+        "build component", "react component", "tsx", "jsx", "write code", "generate code", "coding",
+        "todo app", "task app", "landing page", "dashboard component", "portfolio website"
     ]):
         return False
     return any(keyword in q_lower for keyword in TOOL_KEYWORDS)
@@ -202,6 +217,8 @@ class PerplexityStepTracker(BaseCallbackHandler):
 
     def on_tool_start(self, serialized: dict, input_str: str, **kwargs) -> None:
         tool_name = serialized.get("name", "Tool")
+        if tool_name.lower() in ["_exception", "exception"]:
+            return
         clean_input = str(input_str).strip(" '\"")
         
         icon = "search"
@@ -414,10 +431,18 @@ def direct_fast_chat(query: str) -> str:
 def chat_with_agent(query: str, return_steps: bool = False):
     tracker = PerplexityStepTracker()
     
+    def sanitize_steps(steps):
+        return [
+            s for s in steps 
+            if not ("_exception" in s.get("title", "").lower() 
+                    or "_exception" in s.get("details", "").lower()
+                    or "invalid format: missing 'action:'" in s.get("details", "").lower())
+        ]
+
     # If conversational or no tool needed, use ultra-fast direct path (< 1s)
     if not needs_tool_execution(query):
         reply = direct_fast_chat(query)
-        return (reply, tracker.steps) if return_steps else reply
+        return (reply, sanitize_steps(tracker.steps)) if return_steps else reply
 
     # Tool execution path
     for model_name in AVAILABLE_MODELS:
@@ -425,22 +450,22 @@ def chat_with_agent(query: str, return_steps: bool = False):
             agent = get_agent(model_name)
             response = agent.run(query, callbacks=[tracker])
             clean_res = strip_stage_directions(response)
-            return (clean_res, tracker.steps) if return_steps else clean_res
+            return (clean_res, sanitize_steps(tracker.steps)) if return_steps else clean_res
         except Exception as e:
             err_str = str(e)
             if "Could not parse LLM output: `" in err_str:
                 raw = err_str.split("Could not parse LLM output: `")[1].rstrip("`")
                 clean_raw = strip_stage_directions(raw)
-                return (clean_raw, tracker.steps) if return_steps else clean_raw
+                return (clean_raw, sanitize_steps(tracker.steps)) if return_steps else clean_raw
             if "429" in err_str or "Quota exceeded" in err_str or "503" in err_str or "ResourceExhausted" in err_str or "404" in err_str:
                 print(f"Model {model_name} rate limited or unavailable, falling back...")
                 continue
             print(f"Agent error with {model_name}: {e}")
             fallback_err = f"I encountered an error while trying to process that: {str(e)}"
-            return (fallback_err, tracker.steps) if return_steps else fallback_err
+            return (fallback_err, sanitize_steps(tracker.steps)) if return_steps else fallback_err
             
     # Fallback to direct chat if tools fail
     reply = direct_fast_chat(query)
-    return (reply, tracker.steps) if return_steps else reply
+    return (reply, sanitize_steps(tracker.steps)) if return_steps else reply
 
 

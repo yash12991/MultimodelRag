@@ -49,6 +49,7 @@ interface Message {
   toolSteps?: ToolExecutionStep[]
   sources?: PerplexitySource[]
   followUps?: string[]
+  userEmotion?: { emotion: string; label: string }
 }
 
 interface Thread {
@@ -94,6 +95,8 @@ const ORB_THEMES: { id: OrbThemeName; name: string; desc: string }[] = [
 
 const MODEL_OPTIONS = [
   { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash', badge: 'Flash', desc: 'Low latency real-time voice & multimodality' },
+  { id: 'open-mistral-nemo', name: 'Mistral NeMo 12B', badge: 'Mistral', desc: 'Fast, efficient, 128k context - avoids Gemini quota' },
+  { id: 'codestral-latest', name: 'Mistral Codestral', badge: 'Codestral', desc: 'State-of-the-art code synthesis & refactoring' },
   { id: 'gemini-2.5-flash', name: 'Gemini 3.7 Pro', badge: 'Pro', desc: 'Complex reasoning, coding & tool execution' },
   { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash Lite', badge: 'Lite', desc: 'Real-time conversational streaming' },
 ]
@@ -412,6 +415,7 @@ export default function App() {
   const [savedMemories, setSavedMemories] = useState<any[]>([])
   const [newMemoryKey, setNewMemoryKey] = useState('')
   const [newMemoryVal, setNewMemoryVal] = useState('')
+  const [memorySearchTerm, setMemorySearchTerm] = useState('')
 
   // MCP Hub States
   const [mcpServers, setMcpServers] = useState<MCPServer[]>([])
@@ -475,6 +479,7 @@ export default function App() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const micStreamRef = useRef<MediaStream | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
+  const speakerAnalyserRef = useRef<AnalyserNode | null>(null)
   const nextScheduledTimeRef = useRef<number>(0)
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([])
   const audioEndTimeoutRef = useRef<any>(null)
@@ -698,7 +703,16 @@ export default function App() {
   const getOrCreateAudioContext = useCallback(() => {
     if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
-      audioContextRef.current = new AudioCtx()
+      const ctx = new AudioCtx()
+      audioContextRef.current = ctx
+
+      try {
+        const analyser = ctx.createAnalyser()
+        analyser.fftSize = 128
+        analyser.smoothingTimeConstant = 0.65
+        analyser.connect(ctx.destination)
+        speakerAnalyserRef.current = analyser
+      } catch (_) {}
     }
     if (audioContextRef.current.state === 'suspended') {
       audioContextRef.current.resume().catch(() => { })
@@ -787,6 +801,7 @@ export default function App() {
       }
     }
     const audio = nextItem.audio || new Audio(nextItem.url)
+    audio.volume = 1.0
     currentAudioRef.current = audio
 
     audio.onended = () => {
@@ -794,19 +809,17 @@ export default function App() {
       lastAudioEndTimeRef.current = Date.now()
       processNextAudioInQueue()
     }
-    audio.onerror = () => {
+    audio.onerror = (e) => {
+      console.warn('Audio playback error, falling back to Web Speech API:', e)
       URL.revokeObjectURL(nextItem.url)
-      lastAudioEndTimeRef.current = Date.now()
-      processNextAudioInQueue()
-    }
-    audio.play().catch(e => {
-      console.warn('Playback error, trying Web Speech API fallback:', e)
       lastAudioEndTimeRef.current = Date.now()
       if ('speechSynthesis' in window && nextItem.sentence) {
         try {
           window.speechSynthesis.cancel()
           const utt = new SpeechSynthesisUtterance(nextItem.sentence)
           utt.lang = speechLangRef.current || 'en-US'
+          utt.volume = 1.0
+          utt.rate = 1.0
           utt.onend = () => processNextAudioInQueue()
           utt.onerror = () => processNextAudioInQueue()
           window.speechSynthesis.speak(utt)
@@ -814,11 +827,34 @@ export default function App() {
         } catch (_) {}
       }
       processNextAudioInQueue()
-    })
+    }
+
+    const playPromise = audio.play()
+    if (playPromise !== undefined) {
+      playPromise.catch(e => {
+        console.warn('HTMLAudio play() blocked, using Web Speech API fallback:', e)
+        lastAudioEndTimeRef.current = Date.now()
+        if ('speechSynthesis' in window && nextItem.sentence) {
+          try {
+            window.speechSynthesis.cancel()
+            const utt = new SpeechSynthesisUtterance(nextItem.sentence)
+            utt.lang = speechLangRef.current || 'en-US'
+            utt.volume = 1.0
+            utt.rate = 1.0
+            utt.onend = () => processNextAudioInQueue()
+            utt.onerror = () => processNextAudioInQueue()
+            window.speechSynthesis.speak(utt)
+            return
+          } catch (_) {}
+        }
+        processNextAudioInQueue()
+      })
+    }
   }, [])
 
-  // Ultra-low latency gapless audio chunk scheduler via Web Audio API
+  // Ultra-low latency gapless audio chunk scheduler via HTML5 Audio Queue
   const enqueueAudioChunk = useCallback(async (base64Data: string, sentence: string) => {
+    if (!base64Data) return
     if (sentence) {
       lastAisiaSpokenRef.current.push(sentence.toLowerCase())
       if (lastAisiaSpokenRef.current.length > 8) {
@@ -827,83 +863,39 @@ export default function App() {
     }
 
     try {
-      const ctx = getOrCreateAudioContext()
-      if (ctx.state === 'suspended') {
-        await ctx.resume().catch(() => {})
-      }
-
       const binaryString = atob(base64Data)
-      const len = binaryString.length
-      const bytes = new Uint8Array(len)
-      for (let i = 0; i < len; i++) {
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i)
       }
+      const blob = new Blob([bytes], { type: 'audio/mpeg' })
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audio.volume = 1.0
+      audio.preload = 'auto'
 
-      // Fast in-memory asynchronous PCM decode
-      const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0))
-
-      const source = ctx.createBufferSource()
-      source.buffer = audioBuffer
-
-      // Output cleanly to destination without misrouting through microphone analyser
-      source.connect(ctx.destination)
-
-      // Sample-accurate scheduled playback: start immediately or exactly when previous sentence finishes
-      const now = ctx.currentTime
-      const startTime = Math.max(now, nextScheduledTimeRef.current)
-      source.start(startTime)
-      nextScheduledTimeRef.current = startTime + audioBuffer.duration
-      activeSourcesRef.current.push(source)
-
-      setIsSpeaking(true)
-      isSpeakingRef.current = true
-
-      if (audioEndTimeoutRef.current) {
-        clearTimeout(audioEndTimeoutRef.current)
+      audioQueueRef.current.push({ url, sentence, audio })
+      if (!isPlayingQueueRef.current) {
+        processNextAudioInQueue()
       }
-
-      const remainingMs = Math.max(60, (nextScheduledTimeRef.current - ctx.currentTime) * 1000)
-      audioEndTimeoutRef.current = setTimeout(() => {
-        setIsSpeaking(false)
-        isSpeakingRef.current = false
-        lastAudioEndTimeRef.current = Date.now()
-        activeSourcesRef.current = []
-        nextScheduledTimeRef.current = 0
-        if (activeModalRef.current === 'voice-call' && !isMutedRef.current) {
-          try { recognitionRef.current?.start() } catch (_) { }
-        }
-      }, remainingMs)
-
     } catch (e) {
-      console.warn('Web Audio decode fallback to HTMLAudio:', e)
-      try {
-        const binaryString = atob(base64Data)
-        const bytes = new Uint8Array(binaryString.length)
-        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i)
-        const blob = new Blob([bytes], { type: 'audio/mpeg' })
-        const url = URL.createObjectURL(blob)
-        const preloadedAudio = new Audio(url)
-        preloadedAudio.preload = 'auto'
-        audioQueueRef.current.push({ url, sentence, audio: preloadedAudio })
-        if (!isPlayingQueueRef.current) {
-          processNextAudioInQueue()
-        }
-      } catch (_) {
-        if ('speechSynthesis' in window && sentence) {
-          try {
-            window.speechSynthesis.cancel()
-            const utt = new SpeechSynthesisUtterance(sentence)
-            utt.lang = speechLangRef.current || 'en-US'
-            utt.onend = () => { setIsSpeaking(false); isSpeakingRef.current = false }
-            utt.onerror = () => { setIsSpeaking(false); isSpeakingRef.current = false }
-            setIsSpeaking(true)
-            isSpeakingRef.current = true
-            window.speechSynthesis.speak(utt)
-          } catch (_) {}
-        }
+      console.warn('Audio queue error, falling back to Web Speech API:', e)
+      if ('speechSynthesis' in window && sentence) {
+        try {
+          window.speechSynthesis.cancel()
+          const utt = new SpeechSynthesisUtterance(sentence)
+          utt.lang = speechLangRef.current || 'en-US'
+          utt.volume = 1.0
+          utt.rate = 1.0
+          utt.onend = () => { setIsSpeaking(false); isSpeakingRef.current = false }
+          utt.onerror = () => { setIsSpeaking(false); isSpeakingRef.current = false }
+          setIsSpeaking(true)
+          isSpeakingRef.current = true
+          window.speechSynthesis.speak(utt)
+        } catch (_) {}
       }
     }
-  }, [getOrCreateAudioContext, processNextAudioInQueue])
+  }, [processNextAudioInQueue])
 
   // Speech Recognition Setup (Continuous & Bidirectional Full-Duplex)
   useEffect(() => {
@@ -1049,6 +1041,13 @@ export default function App() {
       source.connect(analyser)
       analyserRef.current = analyser
 
+      // Also create dedicated speaker AnalyserNode for real-time speech visualizer sync
+      const speakerAnalyser = audioCtx.createAnalyser()
+      speakerAnalyser.fftSize = 128
+      speakerAnalyser.smoothingTimeConstant = 0.65
+      speakerAnalyser.connect(audioCtx.destination)
+      speakerAnalyserRef.current = speakerAnalyser
+
       // Real-time acoustic visualizer loop
       const bufferLength = analyser.frequencyBinCount
       const dataArray = new Uint8Array(bufferLength)
@@ -1090,6 +1089,7 @@ export default function App() {
       audioContextRef.current = null
     }
     analyserRef.current = null
+    speakerAnalyserRef.current = null
 
     // Stop recognition
     try {
@@ -1282,6 +1282,10 @@ export default function App() {
                   : [...currentSteps, newStep]
                 return { ...m, toolSteps: updated }
               }))
+            } else if (data.type === 'user_emotion') {
+              setMessages(prev => prev.map(m =>
+                m.id === aisiaMsgId ? { ...m, userEmotion: { emotion: data.emotion, label: data.label } } : m
+              ))
             } else if (data.type === 'sources') {
               setMessages(prev => prev.map(m =>
                 m.id === aisiaMsgId ? { ...m, sources: data.sources } : m
@@ -1326,7 +1330,20 @@ export default function App() {
               if (detected.length > 0) {
                 const incomingArt = detected[0]
                 setActiveArtifact(prev => {
-                  if (prev && prev.files && prev.files.length > 0 && incomingArt.files && incomingArt.files.length > 0) {
+                  // If no previous artifact or previous was default welcome demo, load fresh artifact
+                  if (!prev || prev.id === 'art-welcome') {
+                    return incomingArt
+                  }
+
+                  // Determine if this is an explicit iteration/modification on the current project
+                  const isIteration = (
+                    finalContent.includes('Multi-File Project:') ||
+                    finalContent.includes('Modification Request:') ||
+                    (incomingArt.files && incomingArt.files.length === 1 && !incomingArt.files[0].name.endsWith('.html')) ||
+                    Boolean(incomingArt.title && prev.title && incomingArt.title.toLowerCase() === prev.title.toLowerCase())
+                  )
+
+                  if (isIteration && prev.files && prev.files.length > 0 && incomingArt.files && incomingArt.files.length > 0) {
                     // Smart merge files into current project
                     const mergedFiles = [...prev.files]
                     for (const inc of incomingArt.files) {
@@ -1341,13 +1358,15 @@ export default function App() {
                     const activeContent = (mergedFiles.find(f => f.name === activeName) || mergedFiles[0]).content
                     return {
                       ...prev,
-                      id: incomingArt.id || `project-${Date.now()}`,
+                      id: incomingArt.id || prev.id,
                       title: incomingArt.title && incomingArt.title !== 'Multi-File Web Project' ? incomingArt.title : prev.title,
                       files: mergedFiles,
                       code: activeContent,
                       activeFileName: activeName
                     }
                   }
+
+                  // Otherwise, this is a fresh project: load incoming artifact cleanly
                   return incomingArt
                 })
                 if (agentMode === 'coding' || (incomingArt.files && incomingArt.files.length > 1) || incomingArt.type === 'html') {
@@ -1641,7 +1660,7 @@ export default function App() {
     }
   }
 
-  const handleDeleteMemory = async (memoryId: number) => {
+  const handleDeleteMemory = async (memoryId: string | number) => {
     try {
       await fetch(`http://localhost:8000/memory/${memoryId}`, { method: 'DELETE' })
       setSavedMemories(prev => prev.filter(m => m.id !== memoryId))
@@ -2193,6 +2212,14 @@ export default function App() {
                             </div>
                           )}
 
+                          {/* Real-time User Emotion Resonance Badge */}
+                          {msg.sender === 'aisia' && msg.userEmotion && (
+                            <div className={`emotion-resonance-pill emotion-${msg.userEmotion.emotion}`}>
+                              <span className="emotion-resonance-dot" />
+                              <span className="emotion-resonance-label">{msg.userEmotion.label}</span>
+                            </div>
+                          )}
+
                           {/* Text content with Artifact extraction and Open Canvas action */}
                           <div className="message-text">
                             {msg.sender === 'aisia' ? (
@@ -2494,6 +2521,7 @@ export default function App() {
                   size={isInCallChatOpen ? 200 : 340}
                   theme={orbTheme}
                   analyserRef={analyserRef}
+                  speakerAnalyserRef={speakerAnalyserRef}
                   isMuted={isMuted}
                   onClick={() => {
                     if (isSpeaking) {
@@ -3085,18 +3113,40 @@ export default function App() {
                   </div>
                 )}
 
-                {/* TAB 3: Persistent Memory */}
+                {/* TAB 3: Mem0 Persistent Memory */}
                 {settingsTab === 'memory' && (
                   <div className="settings-section">
                     <div className="setting-group">
-                      <label className="setting-label">Stored Facts & Autonomous Memory</label>
-                      <p className="setting-desc">Aisia autonomously remembers key facts about you across all sessions via local SQLite database.</p>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <label className="setting-label" style={{ margin: 0 }}>Mem0 Neural Memory</label>
+                          <span style={{ fontSize: '11px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 600 }}>Active</span>
+                        </div>
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{savedMemories.length} facts remembered</span>
+                      </div>
+                      <p className="setting-desc">Aisia autonomously extracts, updates, and semantically searches your preferences, technical stack, and facts using the Mem0 intelligence graph & ChromaDB vector database.</p>
+
+                      {/* Memory Search Filter */}
+                      {savedMemories.length > 2 && (
+                        <div style={{ marginBottom: '12px' }}>
+                          <input
+                            type="text"
+                            placeholder="Search remembered facts..."
+                            className="setting-input"
+                            value={memorySearchTerm}
+                            onChange={e => setMemorySearchTerm(e.target.value)}
+                            style={{ width: '100%', fontSize: '13px', padding: '8px 12px' }}
+                          />
+                        </div>
+                      )}
 
                       <div className="memories-list">
                         {savedMemories.length === 0 ? (
-                          <div className="empty-sub">No memories saved yet. Talk to Aisia to populate automatically.</div>
+                          <div className="empty-sub">No memories saved yet. Talk to Aisia naturally and it will automatically extract and remember key facts.</div>
                         ) : (
-                          savedMemories.map(m => (
+                          savedMemories
+                            .filter(m => !memorySearchTerm.trim() || (m.key + ' ' + m.value).toLowerCase().includes(memorySearchTerm.toLowerCase()))
+                            .map(m => (
                             <div key={m.id} className="memory-card">
                               <div className="memory-left">
                                 <span className="memory-key">{m.key}</span>
@@ -3107,7 +3157,7 @@ export default function App() {
                                 type="button"
                                 className="memory-delete-btn"
                                 onClick={() => handleDeleteMemory(m.id)}
-                                title="Delete fact"
+                                title="Delete fact from Mem0"
                               >
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                               </button>
@@ -3118,23 +3168,23 @@ export default function App() {
                     </div>
 
                     <div className="setting-group">
-                      <label className="setting-label">Add Fact Manually</label>
+                      <label className="setting-label">Add Fact Manually to Mem0</label>
                       <div className="add-memory-row">
                         <input
                           type="text"
-                          placeholder="Key (e.g. role or preferred_framework)"
+                          placeholder="Category / Key (e.g. preferred_stack or location)"
                           className="setting-input"
                           value={newMemoryKey}
                           onChange={e => setNewMemoryKey(e.target.value)}
                         />
                         <input
                           type="text"
-                          placeholder="Value (e.g. Principal Architect or React 19)"
+                          placeholder="Fact (e.g. Next.js, Rust, or lives in SF)"
                           className="setting-input"
                           value={newMemoryVal}
                           onChange={e => setNewMemoryVal(e.target.value)}
                         />
-                        <button className="setting-add-btn" onClick={handleAddMemory}>Save Fact</button>
+                        <button className="setting-add-btn" onClick={handleAddMemory}>Save to Mem0</button>
                       </div>
                     </div>
                   </div>

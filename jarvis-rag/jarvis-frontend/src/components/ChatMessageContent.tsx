@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import type { Artifact } from '../CodingCanvas'
 import type { ToolExecutionStep } from '../App'
-import { extractArtifactsFromText } from '../utils/artifactParser'
+import { extractArtifactsFromText, normalizeMarkdownCodeFences } from '../utils/artifactParser'
 
 export interface PerplexitySource {
   index: number
@@ -379,18 +379,24 @@ export const ChatMessageContent: React.FC<ChatMessageContentProps> = ({
       a.code.toLowerCase().includes('start presentation'))
   )
 
+  // Pre-normalize text for code fences
+  const normalizedText = normalizeMarkdownCodeFences(text || '')
+
   // Split code blocks from text
   const parts: { type: 'text' | 'code'; content: string; language?: string }[] = []
-  const codeBlockRegex = /```([a-zA-Z0-9_\-+ \t="'.]*)\s*([\s\S]*?)```/g
+  const codeBlockRegex = /```([a-zA-Z0-9_\-+ \t="'.]*)\r?\n([\s\S]*?)(?:```|$)/g
   let lastIndex = 0
   let match: RegExpExecArray | null
 
-  while ((match = codeBlockRegex.exec(text || '')) !== null) {
+  while ((match = codeBlockRegex.exec(normalizedText)) !== null) {
     if (match.index > lastIndex) {
-      parts.push({
-        type: 'text',
-        content: (text || '').slice(lastIndex, match.index)
-      })
+      const textChunk = normalizedText.slice(lastIndex, match.index)
+      if (textChunk.trim()) {
+        parts.push({
+          type: 'text',
+          content: textChunk
+        })
+      }
     }
     const rawLangLine = (match[1] || '').trim()
     const firstWordLang = rawLangLine.split(/\s+/)[0]?.toLowerCase() || 'code'
@@ -402,11 +408,14 @@ export const ChatMessageContent: React.FC<ChatMessageContentProps> = ({
     lastIndex = match.index + match[0].length
   }
 
-  if (lastIndex < (text || '').length) {
-    parts.push({
-      type: 'text',
-      content: (text || '').slice(lastIndex)
-    })
+  if (lastIndex < normalizedText.length) {
+    const trailing = normalizedText.slice(lastIndex)
+    if (trailing.trim()) {
+      parts.push({
+        type: 'text',
+        content: trailing
+      })
+    }
   }
 
   const handleCopyCode = (code: string, idx: number) => {
@@ -419,7 +428,8 @@ export const ChatMessageContent: React.FC<ChatMessageContentProps> = ({
     if (!onOpenArtifact) return
 
     if (projectArtifact && projectArtifact.files) {
-      const matchingFile = projectArtifact.files.find(f => f.content.trim() === code.trim())
+      const matchingFile = projectArtifact.files.find(f => f.content.trim() === code.trim()) ||
+                           projectArtifact.files.find(f => f.language.toLowerCase() === lang.toLowerCase())
       onOpenArtifact({
         ...projectArtifact,
         activeFileName: matchingFile ? matchingFile.name : projectArtifact.activeFileName
@@ -427,8 +437,22 @@ export const ChatMessageContent: React.FC<ChatMessageContentProps> = ({
       return
     }
 
-    if (detectedArtifacts.length > 0 && detectedArtifacts[idx]) {
-      onOpenArtifact(detectedArtifacts[idx])
+    // Check if code matches any file in any detected artifact
+    for (const art of detectedArtifacts) {
+      if (art.files && art.files.length > 0) {
+        const matchingFile = art.files.find(f => f.content.trim() === code.trim())
+        if (matchingFile) {
+          onOpenArtifact({
+            ...art,
+            activeFileName: matchingFile.name
+          })
+          return
+        }
+      }
+    }
+
+    if (detectedArtifacts.length === 1) {
+      onOpenArtifact(detectedArtifacts[0])
       return
     }
 
@@ -897,13 +921,20 @@ export const ChatMessageContent: React.FC<ChatMessageContentProps> = ({
     return nodes
   }
 
+  const displaySteps = (toolSteps || []).filter(
+    (step) =>
+      !step.title?.toLowerCase().includes('_exception') &&
+      !step.title?.toLowerCase().includes('tool: exception') &&
+      !step.details?.toLowerCase().includes("invalid format: missing 'action:'")
+  )
+
   return (
     <div className="chat-message-rendered">
       {/* 1. PERPLEXITY-STYLE AGENTIC TOOL EXECUTION BADGES */}
-      {toolSteps && toolSteps.length > 0 && (
+      {displaySteps.length > 0 && (
         <div className="agent-tool-steps-container">
           <div className="agent-tool-steps-list">
-            {toolSteps.map((step) => {
+            {displaySteps.map((step) => {
               const isExpanded = expandedSteps.includes(step.id)
               return (
                 <div

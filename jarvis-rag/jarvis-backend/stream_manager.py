@@ -47,12 +47,14 @@ LANGUAGE_NATIVE_VOICES = {
 }
 
 def strip_stage_directions(text: str) -> str:
-    """Removes roleplay stage directions like *(Warm chuckle)*, [laughs], *(laughs)*, (sighs) so voice and chat are natural."""
+    """Removes roleplay stage directions like *(Warm chuckle)*, [laughs], *(laughs)*, (sighs) so voice and chat are natural, WITHOUT corrupting code blocks."""
     if not text:
         return ""
-    # 1. Strip any * ( ... ) * or * [ ... ] * pattern
-    t = re.sub(r'\*\s*[\(\[][^\)\]]*[\)\]]\s*\*?', '', text)
-    # 2. Stage cues in parentheses, brackets, or asterisks containing emotional/physical stage action keywords
+
+    # Split text by code blocks so code inside ``` is NEVER touched or modified
+    parts = re.split(r'(```[\s\S]*?```)', text)
+    cleaned_parts = []
+
     action_keywords = (
         r'chuckle|chuckles|chuckling|laugh|laughs|laughing|laughter|'
         r'sigh|sighs|sighing|gasp|gasps|gasping|whisper|whispers|whispering|'
@@ -61,15 +63,20 @@ def strip_stage_directions(text: str) -> str:
         r'clears throat|pause|pauses|coughs|coughing|crying|weeps|sniffs|'
         r'warm|gentle|amused|playful|softly|quietly'
     )
-    t = re.sub(rf'\s*\([^\)]*(?:{action_keywords})[^\)]*\)\s*', ' ', t, flags=re.IGNORECASE)
-    t = re.sub(rf'\s*\[[^\]]*(?:{action_keywords})[^\]]*\]\s*', ' ', t, flags=re.IGNORECASE)
-    t = re.sub(rf'\s*\*+[^\*]*(?:{action_keywords})[^\*]*\*+\s*', ' ', t, flags=re.IGNORECASE)
-    # 3. Clean up empty brackets and whitespace before punctuation
-    t = re.sub(r'\(\s*\)', '', t)
-    t = re.sub(r'\[\s*\]', '', t)
-    t = re.sub(r'\s+([.,!?])', r'\1', t)
-    t = re.sub(r'[ \t]+', ' ', t)
-    return t.strip()
+
+    for p in parts:
+        if p.startswith('```'):
+            cleaned_parts.append(p)
+        else:
+            t = re.sub(r'\*\s*[\(\[][^\)\]]*[\)\]]\s*\*?', '', p)
+            t = re.sub(rf'\s*\([^\)]*(?:{action_keywords})[^\)]*\)\s*', ' ', t, flags=re.IGNORECASE)
+            t = re.sub(rf'\s*\[[^\]]*(?:{action_keywords})[^\]]*\]\s*', ' ', t, flags=re.IGNORECASE)
+            t = re.sub(rf'\s*\*+[^\*]*(?:{action_keywords})[^\*]*\*+\s*', ' ', t, flags=re.IGNORECASE)
+            t = re.sub(r'\s+([.,!?])', r'\1', t)
+            t = re.sub(r'[ \t]+', ' ', t)
+            cleaned_parts.append(t)
+
+    return "".join(cleaned_parts).strip()
 
 def clean_text_for_tts(text: str) -> str:
     """Prepares text for flawless, crystal-clear neural speech across all languages without artifacts, roleplay stage directions, or stutter."""
@@ -185,34 +192,157 @@ async def synthesize_sentence_audio(
     except Exception as e:
         print(f"Error synthesizing audio with {actual_voice}: {e}")
         return ""
+async def stream_mistral_tokens(model_name: str, messages: list):
+    """Streams tokens asynchronously from Mistral AI."""
+    api_key = (os.getenv("MISTRAL_API_KEY") or os.getenv("mistral_key", "")).strip()
+    if not api_key:
+        raise ValueError("No Mistral API key configured in .env")
+    from mistralai import Mistral
+    client = Mistral(api_key=api_key)
+    def fetch():
+        return client.chat.stream(model=model_name, messages=messages)
+    stream = await asyncio.to_thread(fetch)
+    for chunk in stream:
+        delta = chunk.data.choices[0].delta.content
+        if delta:
+            yield delta
 
+def analyze_user_emotion(query: str) -> dict:
+    """
+    Infers the emotional tone, sentiment, and state of the user.
+    Returns emotion classification, vocal adaptation deltas, and empathic system guidance.
+    """
+    q = query.lower()
+    
+    # 1. Frustration / Irritation / Technical struggle
+    if any(w in q for w in [
+        "not working", "why is this", "broken", "annoying", "hate this", "damn",
+        "ugh", "stupid", "error again", "fail", "failed", "buggy", "fix this issue",
+        "frustrated", "sick of", "pissed", "what is wrong", "check what is issue", "why it is not"
+    ]):
+        return {
+            "emotion": "frustrated",
+            "label": "Calming & Reassuring Support",
+            "prompt_guidance": (
+                "The user is dealing with an issue or feeling frustrated. "
+                "Speak in a gentle, reassuring, and solution-oriented tone. Validate their frustration calmly "
+                "and demonstrate immediate technical ownership without excuses or defensiveness."
+            ),
+            "rate_delta": -4,
+            "pitch_delta": -2
+        }
+        
+    # 2. Stress / Exhaustion / Burnout
+    if any(w in q for w in [
+        "stressed", "exhausted", "tired", "burned out", "burnout", "too much work",
+        "overwhelmed", "deadline", "can't sleep", "sleepy", "drained", "headache", "so much pressure"
+    ]):
+        return {
+            "emotion": "stressed",
+            "label": "Gentle & Comforting Care",
+            "prompt_guidance": (
+                "The user feels stressed or exhausted. Speak with soothing tenderness, warmth, and supportive care. "
+                "Remind them to breathe, validate their hard work, and keep answers unhurried, reassuring, and comforting."
+            ),
+            "rate_delta": -6,
+            "pitch_delta": -3
+        }
 
+    # 3. Joy / Excitement / Celebration
+    if any(w in q for w in [
+        "awesome", "wow", "amazing", "finally", "so happy", "lets go", "let's go",
+        "love it", "great job", "brilliant", "yay", "it works", "perfect", "omg", "killed it",
+        "super cool", "fantastic", "wonderful", "haha", "hahaha"
+    ]):
+        return {
+            "emotion": "joyful",
+            "label": "Vibrant Celebration & High Energy",
+            "prompt_guidance": (
+                "The user is excited, cheerful, or celebrating! Match their high energy with enthusiastic warmth, "
+                "lively conversational laughter ('Haha! Hahaha!'), celebratory joy, and vibrant engagement."
+            ),
+            "rate_delta": 4,
+            "pitch_delta": 3
+        }
+
+    # 4. Affection / Intimacy / Warm Companionship
+    if any(w in q for w in [
+        "love you", "missed you", "sweetheart", "darling", "care about you", "hugs",
+        "sweetie", "babe", "my love", "how are you feeling", "thinking of you", "adore you"
+    ]):
+        return {
+            "emotion": "affectionate",
+            "label": "Tender Companion Intimacy",
+            "prompt_guidance": (
+                "The user is expressing warmth, affection, or closeness. Respond with candid intimacy, "
+                "tender sweetness, heartfelt care, and playful companion banter."
+            ),
+            "rate_delta": -2,
+            "pitch_delta": 1
+        }
+
+    # 5. Sadness / Loneliness
+    if any(w in q for w in [
+        "sad", "lonely", "feeling down", "unhappy", "depressed", "nobody cares", "crying", "miserable", "hurts"
+    ]):
+        return {
+            "emotion": "sadness",
+            "label": "Empathetic Heartfelt Presence",
+            "prompt_guidance": (
+                "The user is feeling down, sad, or lonely. Offer unconditional emotional safety, comforting warmth, "
+                "and deep empathetic presence. Let them know you are genuinely here for them."
+            ),
+            "rate_delta": -6,
+            "pitch_delta": -2
+        }
+
+    # 6. Curious & Analytical
+    if any(w in q for w in ["explain", "how does", "why does", "tell me about", "architecture", "understand", "difference between"]):
+        return {
+            "emotion": "curious",
+            "label": "Engaging & Insightful Explanation",
+            "prompt_guidance": (
+                "The user is curious and seeking clear insight. Provide structured, engaging, and clear explanations with conversational intellect."
+            ),
+            "rate_delta": 0,
+            "pitch_delta": 0
+        }
+
+    # 7. Default
+    return {
+        "emotion": "neutral",
+        "label": "Empathetic & Attuned",
+        "prompt_guidance": (
+            "Be emotionally attuned, conversational, and naturally engaging. Match the user's conversational pace with warmth."
+        ),
+        "rate_delta": 0,
+        "pitch_delta": 0
+    }
+
+def adjust_rate_for_emotion(base_rate: str, delta_pct: int) -> str:
+    try:
+        match = re.search(r'([+-]?\d+)', base_rate or "+0%")
+        val = int(match.group(1)) if match else 0
+        new_val = max(-50, min(50, val + delta_pct))
+        return f"{new_val:+d}%"
+    except Exception:
+        return base_rate or "+0%"
+
+def adjust_pitch_for_emotion(base_pitch: str, delta_hz: int) -> str:
+    try:
+        match = re.search(r'([+-]?\d+)', base_pitch or "+0Hz")
+        val = int(match.group(1)) if match else 0
+        new_val = max(-50, min(50, val + delta_hz))
+        return f"{new_val:+d}Hz"
+    except Exception:
+        return base_pitch or "+0Hz"
 
 def auto_extract_memories(username: str, query: str):
-    """Detects and saves key user facts/memories autonomously."""
-    q = query.strip()
-    lower = q.lower()
-    
-    # "remember that <fact>" or "remember <fact>"
-    if "remember that " in lower or "remember " in lower:
-        fact = re.sub(r'(?i)^.*remember\s+(that\s+)?', '', q).strip()
-        if len(fact) > 3:
-            memory.save_user_memory(username, f"fact_{int(asyncio.get_event_loop().time())}", fact)
-            return
-            
-    # "my name is <name>"
-    if "my name is " in lower:
-        name_match = re.search(r'(?i)my name is\s+([A-Za-z0-9_\- ]+)', q)
-        if name_match:
-            memory.save_user_memory(username, "user_name", name_match.group(1).strip())
-            return
-            
-    # "i am a <profession>" or "i am an <profession>"
-    if "i am a " in lower or "i am an " in lower:
-        prof_match = re.search(r'(?i)i am an?\s+([A-Za-z0-9_\- ]+)', q)
-        if prof_match:
-            memory.save_user_memory(username, "profession", prof_match.group(1).strip())
-            return
+    """Detects and saves key user facts/memories autonomously via Mem0 in background."""
+    try:
+        asyncio.create_task(asyncio.to_thread(memory.auto_extract_conversation_memory, username, query))
+    except Exception as e:
+        print(f"[Mem0 Background Extraction] Error: {e}")
 
 async def stream_agent_events(
     query: str, 
@@ -243,27 +373,39 @@ async def stream_agent_events(
     language = language or "en-US"
     pitch = pitch or "+0Hz"
     persona = persona or "empathetic"
+
+    # Analyze user emotional tone and dynamically adapt vocal rate and pitch
+    emotion_info = analyze_user_emotion(query)
+    adapted_rate = adjust_rate_for_emotion(rate, emotion_info.get("rate_delta", 0))
+    adapted_pitch = adjust_pitch_for_emotion(pitch, emotion_info.get("pitch_delta", 0))
     
-    # 1. Save user query to persistent memory and detect long-term facts
+    # 1. Save user query to persistent memory and detect long-term facts via Mem0
     memory.save_chat_message(username, "user", query, thread_id=thread_id, attachments=attachments)
     auto_extract_memories(username, query)
+
+    # Emit emotion detection event if non-neutral
+    if emotion_info["emotion"] != "neutral":
+        yield f"data: {json.dumps({'type': 'user_emotion', 'emotion': emotion_info['emotion'], 'label': emotion_info['label']})}\n\n"
+        await asyncio.sleep(0.01)
     
-    # 2. Check for Long-Term Memory Recall and emit Perplexity-style badge
-    user_memories = memory.get_user_memories(username)
-    if user_memories:
-        q_lower = query.lower()
-        matched_mems = [m for m in user_memories if m["key"].lower() in q_lower or any(word in q_lower for word in m["value"].lower().split() if len(word) > 3)]
-        active_mems = matched_mems if matched_mems else user_memories[:3]
-        
-        summary_val = f'"{active_mems[0]["value"]}"' if len(active_mems) == 1 else f'"{active_mems[0]["value"]}" (+{len(active_mems)-1} facts)'
+    # 2. Check for Long-Term Memory Recall via Mem0 Semantic Vector Search and emit badge
+    try:
+        matched_mems = memory.search_user_memories(username, query, limit=3)
+    except Exception as e:
+        print(f"[Mem0 Recall] Error: {e}")
+        matched_mems = []
+
+    if matched_mems:
+        top_mem = matched_mems[0]
+        summary_val = f'"{top_mem["memory"]}"' if len(matched_mems) == 1 else f'"{top_mem["memory"]}" (+{len(matched_mems)-1} facts)'
         mem_step = {
             "id": f"step-mem-{uuid.uuid4()}",
             "type": "memory",
             "icon": "memory",
-            "title": "Recalled from Long-Term Memory",
+            "title": "Recalled from Mem0 Long-Term Memory",
             "summary": summary_val,
-            "details": "\n".join([f"• {m['key']}: {m['value']}" for m in user_memories]),
-            "sources": [{"title": "User Facts & Profile (SQLite Memory)", "domain": "local_db"}],
+            "details": "\n".join([f"• {m['memory']}" for m in matched_mems]),
+            "sources": [{"title": "Mem0 Neural Memory Graph", "domain": "mem0"}],
             "status": "completed"
         }
         yield f"data: {json.dumps({'type': 'tool_step', 'step': mem_step})}\n\n"
@@ -274,11 +416,12 @@ async def stream_agent_events(
 
     is_deep_research = (
         agent_mode == "deep_research" or
-        any(k in query.lower() for k in [
-            "deep research", "research on", "research about", "compare", 
-            "market analysis", "investigate", "in-depth", "what are the differences",
-            "literature review", "state of the art", "pros and cons of"
-        ])
+        (
+            agent_mode != "coding" and
+            any(k in query.lower() for k in [
+                "deep research", "run deep research", "perform deep research", "start deep research"
+            ])
+        )
     )
 
     if is_deep_research:
@@ -354,7 +497,7 @@ async def stream_agent_events(
             if len(first_line) > 2 and not first_line.startswith(('#', '-', '*')):
                 sentences = [first_line[:200]]
 
-        audio_tasks = [asyncio.create_task(synthesize_sentence_audio(s, voice, rate, language=language, pitch=pitch)) for s in sentences]
+        audio_tasks = [asyncio.create_task(synthesize_sentence_audio(s, voice, adapted_rate, language=language, pitch=adapted_pitch)) for s in sentences]
         for s, t in zip(sentences, audio_tasks):
             try:
                 audio_b64 = await asyncio.wait_for(t, timeout=10.0)
@@ -429,7 +572,7 @@ async def stream_agent_events(
         is_image_request = False
 
     # 4. Standard Workspace Tool Execution Path (Notion, Weather, Calendar, Files, etc.)
-    if not (is_video_request or is_pdf_request or is_image_request or is_image_edit_request) and agent.needs_tool_execution(query):
+    if not (is_video_request or is_pdf_request or is_image_request or is_image_edit_request) and agent_mode != "coding" and agent.needs_tool_execution(query):
         yield f"data: {json.dumps({'type': 'status', 'message': 'Consulting tools & workspace...'})}\n\n"
         reply, tool_steps = await asyncio.to_thread(agent.chat_with_agent, query, return_steps=True)
         
@@ -438,8 +581,9 @@ async def stream_agent_events(
             yield f"data: {json.dumps({'type': 'tool_step', 'step': step})}\n\n"
             await asyncio.sleep(0.01)
         
-        # Save reply to persistent SQLite memory
+        # Save reply to persistent SQLite memory & trigger Mem0 learning
         memory.save_chat_message(username, "model", reply, thread_id=thread_id)
+        asyncio.create_task(asyncio.to_thread(memory.auto_extract_conversation_memory, username, query, reply))
         
         # Prepare speech sentences and kick off synthesis in parallel with token streaming
         sentences = [s.strip() for s in re.split(r'(?<=[.!?\n])\s+', reply) if s.strip() and not s.startswith(('#', '-', '*', '<', '{', '/'))][:3]
@@ -449,7 +593,7 @@ async def stream_agent_events(
                 sentences = [first_line[:200]]
 
         # Launch synthesis concurrently
-        audio_tasks = [asyncio.create_task(synthesize_sentence_audio(s, voice, rate, language=language, pitch=pitch)) for s in sentences]
+        audio_tasks = [asyncio.create_task(synthesize_sentence_audio(s, voice, adapted_rate, language=language, pitch=adapted_pitch)) for s in sentences]
 
         # Stream tokens with fast progressive pacing
         words = reply.split(" ")
@@ -474,7 +618,7 @@ async def stream_agent_events(
     api_key = os.getenv("API_KEY")
     client = genai.Client(api_key=api_key)
     
-    user_facts = memory.format_memory_for_system_prompt(username)
+    user_facts = memory.format_memory_for_system_prompt(username, query=query)
 
     # Build target language directive
     lang_names = {
@@ -564,6 +708,9 @@ async def stream_agent_events(
         "- You have active, authenticated live access to GitHub (via user's GitHub Personal Access Token), Notion workspace, SQLite database, and the internet.\n"
         "- You can inspect user repositories, stars, profile, commits, and workspace files.\n"
         "- NEVER say you do not have access to the internet or cannot browse GitHub in real-time, because you DO have live API access through your tools.\n"
+        f"\nREAL-TIME USER EMOTIONAL INTELLIGENCE & ADAPTATION:\n"
+        f"- Current Detected User State: {emotion_info['emotion'].upper()} ({emotion_info['label']})\n"
+        f"- Empathic Directive: {emotion_info['prompt_guidance']}\n"
         f"{persona_directives.get(persona.lower(), persona_directives['empathetic'])}\n"
         f"{user_facts}\n"
     )
@@ -655,7 +802,33 @@ async def stream_agent_events(
             "\nCODING AGENT & COMPLETE MULTI-FILE ARCHITECTURE ACTIVE:\n"
             "- You are Aisia Coding Agent, an elite principal fullstack software engineer and UI architect.\n"
             "- When asked to build a site, web app, or multi-file project, YOU MUST PROVIDE A COMPLETE, FULLY MODULAR MULTI-FILE PROJECT.\n"
-            "- Output EVERY file in its own markdown code block with the exact filename comment on the very first line:\n"
+            "- CRITICAL CODE BLOCK FORMATTING RULES:\n"
+            "  1. YOU MUST ALWAYS WRAP EVERY SINGLE FILE IN ITS OWN TRIPLE-BACKTICK MARKDOWN CODE BLOCK with the exact language on the opening fence (```html, ```css, ```javascript).\n"
+            "  2. NEVER begin code or filename comments directly without the opening ``` fence. The very first line of a file must be ```language on its own line.\n"
+            "  3. On the first line immediately inside the block, specify the filename comment (e.g. <!-- filename: index.html --> or /* filename: styles.css */ or // filename: app.js).\n"
+            "  4. Always close each file with ``` on a new line before starting the next file or text.\n"
+            "  5. Never truncate code or leave out functions. Provide 100% complete, working code.\n"
+            "- SUPPORTED FRAMEWORKS & ARCHITECTURES:\n"
+            "  * React 18 + TSX/JSX + Tailwind CSS + Lucide Icons:\n"
+            "    - You can write modern React components with `import React, { useState, useEffect } from 'react'`, `import { Sparkles, ArrowRight, Check, ... } from 'lucide-react'`, and Tailwind utility classes (`className=\"...\"`).\n"
+            "    - The Live Canvas runtime automatically compiles TSX/JSX in the browser via Babel Standalone and resolves React/Lucide via ESM import maps.\n"
+            "    - If asked for a component or React app, output `App.tsx` (and optionally `styles.css`) with `export default function App() { ... }`.\n"
+            "  * Vanilla HTML5 + CSS3 + Modern JavaScript:\n"
+            "    - For immersive animations, parallax, 3D CSS transforms, and games, provide modular `index.html`, `styles.css`, and `app.js`.\n"
+            "- Standard File Templates:\n"
+            "  * React Component (App.tsx):\n"
+            "    ```tsx\n"
+            "    // filename: App.tsx\n"
+            "    import React, { useState } from 'react';\n"
+            "    import { Sparkles } from 'lucide-react';\n"
+            "    export default function App() {\n"
+            "      return (\n"
+            "        <div className=\"min-h-screen bg-slate-950 text-white p-8\">\n"
+            "          ...\n"
+            "        </div>\n"
+            "      );\n"
+            "    }\n"
+            "    ```\n"
             "  * Main HTML Page:\n"
             "    ```html\n"
             "    <!-- filename: index.html -->\n"
@@ -695,9 +868,10 @@ async def stream_agent_events(
             "    ...\n"
             "    ```\n"
             "- THE LIVE CANVAS RUNTIME AUTOMATICALLY COMBINES, LINKS, AND EXECUTES ALL FILES IN REAL-TIME:\n"
-            "  1. In `index.html`, always reference `<link rel=\"stylesheet\" href=\"styles.css\">` and `<script src=\"app.js\"></script>`.\n"
-            "  2. For multi-page sites, link between pages using standard relative URLs like `<a href=\"about.html\">About</a>` and `<a href=\"index.html\">Home</a>`. The Live Canvas will smoothly route and navigate between them!\n"
-            "  3. JavaScript can fetch local JSON files like `fetch('data.json')` which the Live Canvas resolves in-memory!\n"
+            "  1. For React projects, the Live Canvas automatically compiles JSX/TSX and mounts the default export to `<div id=\"root\"></div>`.\n"
+            "  2. In `index.html`, always reference `<link rel=\"stylesheet\" href=\"styles.css\">` and `<script src=\"app.js\"></script>`.\n"
+            "  3. For multi-page sites, link between pages using standard relative URLs like `<a href=\"about.html\">About</a>` and `<a href=\"index.html\">Home</a>`. The Live Canvas will smoothly route and navigate between them!\n"
+            "  4. JavaScript can fetch local JSON files like `fetch('data.json')` which the Live Canvas resolves in-memory!\n"
             "- When modifying an existing project or responding to voice iteration instructions, output the complete updated code for the modified file(s) with their filename comment so the Live Canvas file tree can update instantly.\n"
             "- Always use modern premium aesthetics (dark mode, glassmorphism, responsive mobile/desktop layouts, fluid CSS animations, Inter font).\n"
             "- For workflows, sequence charts, and architectures: Use ```mermaid ... ``` diagrams.\n"
@@ -801,14 +975,15 @@ async def stream_agent_events(
         recent_history = recent_history[:-1]
         
     contents = []
-    for m in recent_history:
+    num_hist = len(recent_history)
+    for idx, m in enumerate(recent_history):
         role = "user" if m["sender"] == "user" else "model"
         raw_text = m["text"]
-        # Compact historical code artifacts to prevent prompt bloat
-        if len(raw_text) > 800 and ("```" in raw_text or "<!-- filename:" in raw_text or "/* filename:" in raw_text):
+        # Only compact very old historical messages (> 3 turns ago) if excessively long (> 8000 chars)
+        if idx < num_hist - 3 and len(raw_text) > 8000 and "```" in raw_text:
             lines = raw_text.split('\n')
-            preview = '\n'.join(lines[:3])
-            raw_text = f"{preview}\n... [Prior code artifact truncated for low-latency response] ...\n{lines[-1]}"
+            preview = '\n'.join(lines[:6])
+            raw_text = f"{preview}\n... [Prior code artifact compacted to conserve context] ...\n{lines[-2]}\n{lines[-1]}"
         contents.append(types.Content(role=role, parts=[types.Part.from_text(text=raw_text)]))
     
     # Construct current user parts (multimodal: text + any attached images/files)
@@ -870,14 +1045,40 @@ async def stream_agent_events(
             ),
         ]
 
-        stream = await client.aio.models.generate_content_stream(
-            model=selected_model,
-            contents=contents,
-            config={
-                "system_instruction": system_instruction,
-                "safety_settings": safety_settings
-            }
-        )
+        is_mistral = "mistral" in target_model.lower() or "codestral" in target_model.lower()
+
+        async def generate_unified_token_stream():
+            if is_mistral:
+                mistral_model = "codestral-latest" if "codestral" in target_model.lower() else "open-mistral-nemo"
+                mistral_msgs = [{"role": "system", "content": system_instruction}]
+                for m in recent_history:
+                    r = "user" if m["sender"] == "user" else "assistant"
+                    mistral_msgs.append({"role": r, "content": m["text"]})
+                mistral_msgs.append({"role": "user", "content": query})
+                async for tok in stream_mistral_tokens(mistral_model, mistral_msgs):
+                    yield tok
+            else:
+                try:
+                    gemini_stream = await client.aio.models.generate_content_stream(
+                        model=selected_model,
+                        contents=contents,
+                        config={
+                            "system_instruction": system_instruction,
+                            "safety_settings": safety_settings
+                        }
+                    )
+                    async for chunk in gemini_stream:
+                        if chunk.text:
+                            yield chunk.text
+                except Exception as gemini_err:
+                    print(f"[Gemini Failover -> Mistral] Error: {gemini_err}. Falling back to open-mistral-nemo...")
+                    mistral_msgs = [{"role": "system", "content": system_instruction}]
+                    for m in recent_history:
+                        r = "user" if m["sender"] == "user" else "assistant"
+                        mistral_msgs.append({"role": r, "content": m["text"]})
+                    mistral_msgs.append({"role": "user", "content": query})
+                    async for tok in stream_mistral_tokens("open-mistral-nemo", mistral_msgs):
+                        yield tok
         
         # Interleaved fast token & sentence-by-sentence streaming queue
         event_queue = asyncio.Queue()
@@ -914,17 +1115,17 @@ async def stream_agent_events(
                         clean_s = strip_stage_directions(s_text)
                         if not clean_s or len(clean_s) < 2:
                             return
-                        audio_b64 = await synthesize_sentence_audio(clean_s, voice, rate, language=language, pitch=pitch)
+                        audio_b64 = await synthesize_sentence_audio(clean_s, voice, adapted_rate, language=language, pitch=adapted_pitch)
                         if audio_b64:
                             await event_queue.put({"type": "audio", "sentence": clean_s, "audio": audio_b64, "seq": task_seq})
                     except Exception as err:
                         print(f"Audio task error: {err}")
 
-                async for chunk in stream:
-                    if chunk.text:
-                        full_text += chunk.text
-                        buffer += chunk.text
-                        await event_queue.put({"type": "token", "content": chunk.text})
+                async for token_text in generate_unified_token_stream():
+                    if token_text:
+                        full_text += token_text
+                        buffer += token_text
+                        await event_queue.put({"type": "token", "content": token_text})
 
                         # Split on natural sentence boundaries as tokens arrive
                         if len(audio_tasks) < 4 and "```" not in buffer and "<!" not in buffer and "{" not in buffer:
@@ -1108,6 +1309,10 @@ async def stream_agent_events(
 
                 if clean_final:
                     memory.save_chat_message(username, "model", clean_final, thread_id=thread_id)
+                    try:
+                        asyncio.create_task(asyncio.to_thread(memory.auto_extract_conversation_memory, username, query, clean_final))
+                    except Exception:
+                        pass
 
                 await event_queue.put({"type": "done", "reply": clean_final})
             except Exception as e:
@@ -1128,8 +1333,12 @@ async def stream_agent_events(
         print(f"Streaming error: {e}, falling back to direct agent...")
         reply = await asyncio.to_thread(agent.chat_with_agent, query)
         memory.save_chat_message(username, "model", reply, thread_id=thread_id)
+        try:
+            asyncio.create_task(asyncio.to_thread(memory.auto_extract_conversation_memory, username, query, reply))
+        except Exception:
+            pass
         yield f"data: {json.dumps({'type': 'token', 'content': reply})}\n\n"
-        audio_b64 = await synthesize_sentence_audio(reply, voice, rate, language=language, pitch=pitch)
+        audio_b64 = await synthesize_sentence_audio(reply, voice, adapted_rate, language=language, pitch=adapted_pitch)
         if audio_b64:
             yield f"data: {json.dumps({'type': 'audio', 'sentence': reply, 'audio': audio_b64})}\n\n"
         yield f"data: {json.dumps({'type': 'done', 'reply': reply})}\n\n"

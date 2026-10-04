@@ -60,32 +60,97 @@ function extractFilenameFromCode(code: string, rawLangLine: string, precedingTex
 }
 
 /**
+ * Normalizes markdown text to ensure code blocks are cleanly detected:
+ * 1. Prepend ```<lang> if text begins directly with code or comment without opening backticks
+ * 2. Balance unclosed backtick fences (useful during streaming or token cutoffs)
+ */
+export function normalizeMarkdownCodeFences(rawText: string): string {
+  if (!rawText) return ''
+  let text = rawText.trim()
+
+  // Case 1: Text starts directly with code or comment without ```
+  const directCodeStart = /^(?:<!--\s*filename:|<(?:!DOCTYPE|html\b)|\/\*\s*filename:|\/\/\s*filename:)/i.test(text)
+  if (directCodeStart && !text.startsWith('```')) {
+    let impliedLang = 'html'
+    if (text.startsWith('/*')) impliedLang = 'css'
+    else if (text.startsWith('//')) impliedLang = 'javascript'
+    text = '```' + impliedLang + '\n' + text
+  }
+
+  // Case 2: Fix unclosed code block if odd number of ```
+  const backtickCount = (text.match(/```/g) || []).length
+  if (backtickCount % 2 !== 0) {
+    text += '\n```'
+  }
+
+  return text
+}
+
+/**
+ * Splits a single code block if it contains multiple embedded filename comments
+ * (e.g. models outputting HTML + CSS + JS in a single code block)
+ */
+function splitEmbeddedFiles(code: string, defaultLang: string, defaultName: string): ProjectFile[] {
+  const splitRegex = /(?:^|\n)(?:<!--|\/\*|\/\/|#)\s*(?:filename|file)?:\s*([a-zA-Z0-9_\-./\\]+\.[a-zA-Z0-9]+)(?:\s*-->|\*\/)?/gi
+  const matches: { index: number; filename: string }[] = []
+  let m: RegExpExecArray | null
+
+  while ((m = splitRegex.exec(code)) !== null) {
+    matches.push({
+      index: m.index,
+      filename: m[1].trim().replace(/^(\.\/|\/)/, '')
+    })
+  }
+
+  if (matches.length <= 1) {
+    return [{
+      name: matches[0] ? matches[0].filename : defaultName,
+      language: defaultLang,
+      content: code
+    }]
+  }
+
+  const results: ProjectFile[] = []
+  for (let i = 0; i < matches.length; i++) {
+    const cur = matches[i]
+    const startIndex = cur.index
+    const endIndex = (i + 1 < matches.length) ? matches[i + 1].index : code.length
+    const fileContent = code.slice(startIndex, endIndex).trim()
+    const ext = cur.filename.split('.').pop() || defaultLang
+    results.push({
+      name: cur.filename,
+      language: ext.toLowerCase(),
+      content: fileContent
+    })
+  }
+  return results
+}
+
+/**
  * Parses markdown text to extract runnable code blocks and multi-file projects as Artifacts
  */
 export function extractArtifactsFromText(text: string): Artifact[] {
   if (!text) return []
 
+  const normalized = normalizeMarkdownCodeFences(text)
   const parsedFiles: ProjectFile[] = []
   const seenLangs: Record<string, number> = {}
 
-  // Matches ```language [extra]\n<code>```
-  const codeBlockRegex = /```([a-zA-Z0-9_\-+ \t="'.]*)\s*([\s\S]*?)```/g
+  // Matches ```language [extra]\n<code>``` or unclosed trailing block
+  const codeBlockRegex = /```([a-zA-Z0-9_\-+ \t="'.]*)\r?\n([\s\S]*?)(?:```|$)/g
   let match: RegExpExecArray | null
 
-  while ((match = codeBlockRegex.exec(text)) !== null) {
+  while ((match = codeBlockRegex.exec(normalized)) !== null) {
     const rawLangLine = (match[1] || '').trim()
     const firstWordLang = rawLangLine.split(/\s+/)[0]?.toLowerCase() || 'code'
     const code = match[2].trim()
     if (!code) continue
 
-    const precedingText = text.slice(Math.max(0, match.index - 250), match.index)
+    const precedingText = normalized.slice(Math.max(0, match.index - 250), match.index)
     const detectedFilename = extractFilenameFromCode(code, rawLangLine, precedingText) || getDefaultFilename(firstWordLang, seenLangs)
 
-    parsedFiles.push({
-      name: detectedFilename,
-      language: firstWordLang,
-      content: code
-    })
+    const embedded = splitEmbeddedFiles(code, firstWordLang, detectedFilename)
+    parsedFiles.push(...embedded)
   }
 
   if (parsedFiles.length === 0) {

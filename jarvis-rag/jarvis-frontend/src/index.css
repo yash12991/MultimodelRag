@@ -3311,9 +3311,11 @@ body {
   user-select: none;
   text-align: right;
   font-family: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   color: var(--text-muted);
   line-height: 1.6;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .code-editor-textarea {
@@ -8063,4 +8065,103 @@ body {
 .github-secondary-btn:hover {
   color: #fff;
   border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ==========================================================================
+   USER EMOTIONAL INTELLIGENCE & RESONANCE PILL
+   ========================================================================== */
+
+.emotion-resonance-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+  animation: fadeInEmotion 0.3s ease-out;
+}
+
+@keyframes fadeInEmotion {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.emotion-resonance-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #818cf8;
+  box-shadow: 0 0 8px #818cf8;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.emotion-resonance-pill.emotion-frustrated {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fde68a;
+}
+.emotion-resonance-pill.emotion-frustrated .emotion-resonance-dot {
+  background: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24;
+}
+
+.emotion-resonance-pill.emotion-stressed {
+  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(14, 165, 233, 0.3);
+  color: #bae6fd;
+}
+.emotion-resonance-pill.emotion-stressed .emotion-resonance-dot {
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+}
+
+.emotion-resonance-pill.emotion-joyful {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #bbf7d0;
+}
+.emotion-resonance-pill.emotion-joyful .emotion-resonance-dot {
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+.emotion-resonance-pill.emotion-affectionate {
+  background: rgba(236, 72, 153, 0.1);
+  border-color: rgba(236, 72, 153, 0.3);
+  color: #fbcfe8;
+}
+.emotion-resonance-pill.emotion-affectionate .emotion-resonance-dot {
+  background: #f472b6;
+  box-shadow: 0 0 8px #f472b6;
+}
+
+.emotion-resonance-pill.emotion-sadness {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #e9d5ff;
+}
+.emotion-resonance-pill.emotion-sadness .emotion-resonance-dot {
+  background: #c084fc;
+  box-shadow: 0 0 8px #c084fc;
+}
+
+.emotion-resonance-pill.emotion-curious {
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.3);
+  color: #a5f3fc;
+}
+.emotion-resonance-pill.emotion-curious .emotion-resonance-dot {
+  background: #22d3ee;
+  box-shadow: 0 0 8px #22d3ee;
 }
