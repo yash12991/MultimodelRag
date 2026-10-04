@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./jarvis-rag/jarvis-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./jarvis-rag/jarvis-backend/jarvis.db:/app/jarvis.db
+      - ./jarvis-rag/jarvis-backend/chroma_db:/app/chroma_db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./jarvis-rag/jarvis-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
