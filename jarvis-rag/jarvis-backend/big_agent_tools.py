@@ -261,7 +261,7 @@ def push_project_to_github(args_str: str) -> str:
 def git_push_local_repo(args_str: str = "Update via Aisia Agent") -> str:
     """Commits and pushes current local workspace git changes to GitHub."""
     import subprocess
-    workspace_dir = "/Users/yashsonawane/Advance structural "
+    workspace_dir = os.environ.get("WORKSPACE_DIR") or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_TOKEN_CLASSIC")
     
     commit_msg = "Update via Aisia Agent"

@@ -16,10 +16,9 @@ from typing import Dict, Any, List, Optional
 from langchain.tools import Tool
 from dotenv import load_dotenv
 
-ENV_PATH = "/Users/yashsonawane/Advance structural /.env"
-load_dotenv(ENV_PATH, override=True)
-
 WORKSPACE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ENV_PATH = os.path.join(WORKSPACE_DIR, ".env") if os.path.exists(os.path.join(WORKSPACE_DIR, ".env")) else os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(ENV_PATH, override=True) if os.path.exists(ENV_PATH) else load_dotenv()
 DB_PATH = os.path.join(os.path.dirname(__file__), "jarvis.db")
 CUSTOM_MCP_FILE = os.path.join(os.path.dirname(__file__), "custom_mcp_servers.json")
 

@@ -4,7 +4,9 @@ import uuid
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
-load_dotenv("/Users/yashsonawane/Advance structural /.env")
+load_dotenv()
+
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
 
 IMAGE_DIR = os.path.join(os.path.dirname(__file__), "generated_images")
 os.makedirs(IMAGE_DIR, exist_ok=True)
@@ -86,8 +88,8 @@ def generate_diffusion_image_ai_horde(prompt: str, style: str = "cinematic", tim
                             "engine": "stable_diffusion_horde",
                             "prompt": prompt,
                             "file_path": png_path,
-                            "download_url": f"http://localhost:8000/image/download/{png_filename}",
-                            "view_url": f"http://localhost:8000/image/view/{png_filename}",
+                            "download_url": f"{BACKEND_URL}/image/download/{png_filename}",
+                            "view_url": f"{BACKEND_URL}/image/view/{png_filename}",
                             "size_bytes": file_size,
                             "message": f"Successfully generated Stable Diffusion image for '{prompt}'"
                         }
@@ -130,8 +132,8 @@ def generate_image_pollinations(prompt: str, style: str = "cinematic", width: in
                     "engine": "pollinations_flux",
                     "prompt": prompt,
                     "file_path": img_path,
-                    "download_url": f"http://localhost:8000/image/download/{img_filename}",
-                    "view_url": f"http://localhost:8000/image/view/{img_filename}",
+                    "download_url": f"{BACKEND_URL}/image/download/{img_filename}",
+                    "view_url": f"{BACKEND_URL}/image/view/{img_filename}",
                     "size_bytes": file_size,
                     "message": f"Successfully generated FLUX image via Pollinations for '{prompt}'"
                 }
@@ -156,8 +158,8 @@ def generate_image_pollinations(prompt: str, style: str = "cinematic", width: in
                 "engine": "pollinations_ai",
                 "prompt": prompt,
                 "file_path": img_path,
-                "download_url": f"http://localhost:8000/image/download/{img_filename}",
-                "view_url": f"http://localhost:8000/image/view/{img_filename}",
+                "download_url": f"{BACKEND_URL}/image/download/{img_filename}",
+                "view_url": f"{BACKEND_URL}/image/view/{img_filename}",
                 "size_bytes": file_size,
                 "message": f"Successfully generated Pollinations.ai image for '{prompt}'"
             }
@@ -213,8 +215,8 @@ def generate_image(prompt: str, style: str = "cinematic", aspect_ratio: str = "1
                         "format": "png",
                         "prompt": prompt,
                         "file_path": png_path,
-                        "download_url": f"http://localhost:8000/image/download/{png_filename}",
-                        "view_url": f"http://localhost:8000/image/view/{png_filename}",
+                        "download_url": f"{BACKEND_URL}/image/download/{png_filename}",
+                        "view_url": f"{BACKEND_URL}/image/view/{png_filename}",
                         "size_bytes": len(part.inline_data.data),
                         "message": f"Successfully generated PNG image for '{prompt}'"
                     }
@@ -280,8 +282,8 @@ def generate_image(prompt: str, style: str = "cinematic", aspect_ratio: str = "1
             "format": "svg",
             "prompt": prompt,
             "file_path": file_path,
-            "download_url": f"http://localhost:8000/image/download/{filename}",
-            "view_url": f"http://localhost:8000/image/view/{filename}",
+            "download_url": f"{BACKEND_URL}/image/download/{filename}",
+            "view_url": f"{BACKEND_URL}/image/view/{filename}",
             "content": svg_code,
             "size_bytes": file_size,
             "size_kb": round(file_size / 1024, 1),
@@ -344,13 +346,13 @@ def edit_image(
             orig_b64 = data_uri.split(",", 1)[1]
             with open(orig_path, "wb") as f:
                 f.write(base64.b64decode(orig_b64))
-            original_url = f"http://localhost:8000/image/view/{orig_filename}"
+            original_url = f"{BACKEND_URL}/image/view/{orig_filename}"
         elif data_uri.startswith("http"):
             r_orig = requests.get(data_uri, timeout=10)
             if r_orig.status_code == 200:
                 with open(orig_path, "wb") as f:
                     f.write(r_orig.content)
-                original_url = f"http://localhost:8000/image/view/{orig_filename}"
+                original_url = f"{BACKEND_URL}/image/view/{orig_filename}"
     except Exception as e:
         print(f"Could not persist original comparison image: {e}")
 
@@ -403,8 +405,8 @@ def edit_image(
                         "prompt": prompt,
                         "revised_prompt": revised_prompt,
                         "file_path": img_path,
-                        "download_url": f"http://localhost:8000/image/download/{img_filename}",
-                        "view_url": f"http://localhost:8000/image/view/{img_filename}",
+                        "download_url": f"{BACKEND_URL}/image/download/{img_filename}",
+                        "view_url": f"{BACKEND_URL}/image/view/{img_filename}",
                         "original_url": original_url,
                         "size_bytes": file_size,
                         "size_kb": round(file_size / 1024, 1),
@@ -431,8 +433,8 @@ def edit_image(
                 "engine": "pollinations_fallback",
                 "prompt": prompt,
                 "file_path": img_path,
-                "download_url": f"http://localhost:8000/image/download/{img_filename}",
-                "view_url": f"http://localhost:8000/image/view/{img_filename}",
+                "download_url": f"{BACKEND_URL}/image/download/{img_filename}",
+                "view_url": f"{BACKEND_URL}/image/view/{img_filename}",
                 "size_bytes": file_size,
                 "size_kb": round(file_size / 1024, 1),
                 "message": f"Successfully generated edited visual variation for '{prompt}'"

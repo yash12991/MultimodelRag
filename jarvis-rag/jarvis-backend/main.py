@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 import auth
 
-load_dotenv("/Users/yashsonawane/Advance structural /.env")
+load_dotenv()
 
 app = FastAPI(title="Aisia AI Agent Backend")
 

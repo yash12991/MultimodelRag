@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: aisia-backend
+    env: python
+    region: ohio
+    plan: free
+    rootDir: jarvis-rag/jarvis-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /threads?username=healthcheck
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: API_KEY
+        sync: false
+      - key: NOTION_KEY
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: BACKEND_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

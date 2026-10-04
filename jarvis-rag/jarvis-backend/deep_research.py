@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Tuple, Optional
 from dotenv import load_dotenv
 
-load_dotenv("/Users/yashsonawane/Advance structural /.env")
+load_dotenv()
 
 def extract_domain(url: str) -> str:
     """Extracts clean domain name from URL."""

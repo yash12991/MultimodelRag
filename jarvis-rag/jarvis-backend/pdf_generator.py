@@ -13,6 +13,8 @@ from reportlab.lib.units import inch
 PDF_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "generated_pdfs")
 os.makedirs(PDF_DIR, exist_ok=True)
 
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
+
 def html_to_markdown_for_pdf(html_text: str) -> str:
     text = re.sub(r'<style[\s\S]*?</style>', '', html_text, flags=re.IGNORECASE)
     text = re.sub(r'<script[\s\S]*?</script>', '', text, flags=re.IGNORECASE)
@@ -190,8 +192,8 @@ def generate_pdf_document(title: str, content: str, author: str = "Aisia Autonom
         doc.build(story)
 
         file_size = os.path.getsize(file_path)
-        download_url = f"http://localhost:8000/pdf/download/{filename}"
-        view_url = f"http://localhost:8000/pdf/view/{filename}"
+        download_url = f"{BACKEND_URL}/pdf/download/{filename}"
+        view_url = f"{BACKEND_URL}/pdf/view/{filename}"
 
         return {
             "success": True,

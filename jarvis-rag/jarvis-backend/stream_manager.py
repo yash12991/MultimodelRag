@@ -7,7 +7,7 @@ import uuid
 from typing import AsyncGenerator, Optional, List, Dict
 from dotenv import load_dotenv
 
-load_dotenv("/Users/yashsonawane/Advance structural /.env")
+load_dotenv()
 
 import agent
 import edge_tts

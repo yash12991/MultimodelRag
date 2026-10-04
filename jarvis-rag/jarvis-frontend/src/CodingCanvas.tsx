@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import JSZip from 'jszip'
+import { API_BASE_URL } from './config'
 
 export interface ProjectFile {
   name: string
@@ -158,7 +159,7 @@ export const CodingCanvas: React.FC<CodingCanvasProps> = ({
     setNewRepoName(suggested)
     setIsLoadingRepos(true)
     try {
-      const res = await fetch('http://localhost:8000/github/repos')
+      const res = await fetch(`${API_BASE_URL}/github/repos`)
       if (res.ok) {
         const data = await res.json()
         const repos = data.repos || []
@@ -192,7 +193,7 @@ export const CodingCanvas: React.FC<CodingCanvasProps> = ({
         content: f.content
       }))
 
-      const res = await fetch('http://localhost:8000/github/push', {
+      const res = await fetch(`${API_BASE_URL}/github/push`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

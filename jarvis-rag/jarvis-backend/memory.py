@@ -286,7 +286,7 @@ def get_mem0_client():
     _mem0_init_attempted = True
     try:
         from dotenv import load_dotenv
-        load_dotenv("/Users/yashsonawane/Advance structural /.env")
+        load_dotenv()
         api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("API_KEY")
         if not api_key:
             print("[Mem0] Warning: No GOOGLE_API_KEY or API_KEY found in environment.")

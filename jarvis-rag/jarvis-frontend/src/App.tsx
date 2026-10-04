@@ -5,6 +5,7 @@ import CodingCanvas, { type Artifact } from './CodingCanvas'
 import ChatMessageContent, { type PerplexitySource } from './components/ChatMessageContent'
 import { extractArtifactsFromText } from './utils/artifactParser'
 import { BrandLogo } from './components/BrandLogo'
+import { API_BASE_URL } from './config'
 
 export interface ToolExecutionStep {
   id: string
@@ -505,7 +506,7 @@ export default function App() {
   // Load threads
   const loadThreads = useCallback(async () => {
     try {
-      const res = await fetch(`http://localhost:8000/threads?username=${encodeURIComponent(currentUser)}`)
+      const res = await fetch(`${API_BASE_URL}/threads?username=${encodeURIComponent(currentUser)}`)
       if (res.ok) {
         const data = await res.json()
         const fetchedThreads = data.threads || []
@@ -523,7 +524,7 @@ export default function App() {
   const selectThread = async (threadId: string) => {
     setActiveThreadId(threadId)
     try {
-      const res = await fetch(`http://localhost:8000/threads/${threadId}/messages`)
+      const res = await fetch(`${API_BASE_URL}/threads/${threadId}/messages`)
       if (res.ok) {
         const data = await res.json()
         setMessages(data.messages || [])
@@ -536,7 +537,7 @@ export default function App() {
   // Create new thread
   const handleNewChat = async () => {
     try {
-      const res = await fetch('http://localhost:8000/threads', {
+      const res = await fetch(`${API_BASE_URL}/threads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: currentUser, title: 'New Chat' })
@@ -559,7 +560,7 @@ export default function App() {
     e.stopPropagation()
     if (!confirm('Delete this conversation?')) return
     try {
-      await fetch(`http://localhost:8000/threads/${threadId}`, { method: 'DELETE' })
+      await fetch(`${API_BASE_URL}/threads/${threadId}`, { method: 'DELETE' })
       setThreads(prev => prev.filter(t => t.id !== threadId))
       if (activeThreadId === threadId) {
         const remaining = threads.filter(t => t.id !== threadId)
@@ -577,7 +578,7 @@ export default function App() {
   // Fetch memories and documents
   const fetchMemories = useCallback(async () => {
     try {
-      const res = await fetch(`http://localhost:8000/memory?username=${encodeURIComponent(currentUser)}`)
+      const res = await fetch(`${API_BASE_URL}/memory?username=${encodeURIComponent(currentUser)}`)
       if (res.ok) {
         const data = await res.json()
         setSavedMemories(data.memories || [])
@@ -589,7 +590,7 @@ export default function App() {
 
   const fetchDocuments = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:8000/documents')
+      const res = await fetch(`${API_BASE_URL}/documents`)
       if (res.ok) {
         const data = await res.json()
         setDocuments(data.documents || [])
@@ -601,7 +602,7 @@ export default function App() {
 
   const fetchNotion = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:8000/notion/pages')
+      const res = await fetch(`${API_BASE_URL}/notion/pages`)
       if (res.ok) {
         const data = await res.json()
         setNotionPages(data.pages || [])
@@ -614,7 +615,7 @@ export default function App() {
   const fetchMcpServers = useCallback(async () => {
     try {
       setMcpIsLoading(true)
-      const res = await fetch('http://localhost:8000/mcp/servers')
+      const res = await fetch(`${API_BASE_URL}/mcp/servers`)
       if (res.ok) {
         const data = await res.json()
         if (data.servers) setMcpServers(data.servers)
@@ -629,7 +630,7 @@ export default function App() {
   const handleRunMcpTest = async (toolName: string, sampleArgs: any) => {
     setMcpTestRunning(toolName)
     try {
-      const res = await fetch('http://localhost:8000/mcp/execute', {
+      const res = await fetch(`${API_BASE_URL}/mcp/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tool: toolName, arguments: sampleArgs || {} })
@@ -647,7 +648,7 @@ export default function App() {
     e.preventDefault()
     if (!newMcpName.trim() || !newMcpEndpoint.trim()) return
     try {
-      const res = await fetch('http://localhost:8000/mcp/add', {
+      const res = await fetch(`${API_BASE_URL}/mcp/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1227,7 +1228,7 @@ export default function App() {
     const startTime = performance.now()
 
     try {
-      const response = await fetch('http://localhost:8000/chat/stream', {
+      const response = await fetch(`${API_BASE_URL}/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1439,7 +1440,7 @@ export default function App() {
     if (!speechContent) speechContent = text.slice(0, 300)
 
     try {
-      const res = await fetch('http://localhost:8000/tts', {
+      const res = await fetch(`${API_BASE_URL}/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1509,7 +1510,7 @@ export default function App() {
       const firstLine = msg.text.replace(/^[#* \t\n]+/, '').split('\n')[0].trim()
       const title = firstLine.length > 4 && firstLine.length < 55 ? firstLine : 'Aisia Executive Intelligence Brief'
 
-      const res = await fetch('http://localhost:8000/pdf/generate', {
+      const res = await fetch(`${API_BASE_URL}/pdf/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1555,7 +1556,7 @@ export default function App() {
     setPreviewAudioPlaying(presetId)
 
     try {
-      const res = await fetch('http://localhost:8000/tts', {
+      const res = await fetch(`${API_BASE_URL}/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1628,7 +1629,7 @@ export default function App() {
     if (!notionTaskText.trim()) return
     setNotionStatus('Adding...')
     try {
-      const res = await fetch('http://localhost:8000/notion/todo', {
+      const res = await fetch(`${API_BASE_URL}/notion/todo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task: notionTaskText })
@@ -1647,7 +1648,7 @@ export default function App() {
   const handleAddMemory = async () => {
     if (!newMemoryKey.trim() || !newMemoryVal.trim()) return
     try {
-      await fetch('http://localhost:8000/memory', {
+      await fetch(`${API_BASE_URL}/memory`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: currentUser, key: newMemoryKey.trim(), value: newMemoryVal.trim() })
@@ -1662,7 +1663,7 @@ export default function App() {
 
   const handleDeleteMemory = async (memoryId: string | number) => {
     try {
-      await fetch(`http://localhost:8000/memory/${memoryId}`, { method: 'DELETE' })
+      await fetch(`${API_BASE_URL}/memory/${memoryId}`, { method: 'DELETE' })
       setSavedMemories(prev => prev.filter(m => m.id !== memoryId))
     } catch (e) {
       console.error(e)
@@ -1677,7 +1678,7 @@ export default function App() {
     const formData = new FormData()
     formData.append('file', file)
     try {
-      await fetch('http://localhost:8000/upload', {
+      await fetch(`${API_BASE_URL}/upload`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -1694,7 +1695,7 @@ export default function App() {
   const handleViewTranscript = async (filename: string) => {
     setIsLoadingTranscript(true)
     try {
-      const res = await fetch(`http://localhost:8000/documents/${encodeURIComponent(filename)}/transcript`)
+      const res = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(filename)}/transcript`)
       if (res.ok) {
         const data = await res.json()
         setSelectedDocTranscript({ name: filename, content: data.transcript })
@@ -1710,7 +1711,7 @@ export default function App() {
     e.stopPropagation()
     if (!confirm(`Are you sure you want to delete "${filename}"?`)) return
     try {
-      await fetch(`http://localhost:8000/documents/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+      await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(filename)}`, { method: 'DELETE' })
       fetchDocuments()
     } catch (err) {
       console.error('Error deleting document:', err)

@@ -3,7 +3,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import initialize_agent, Tool, AgentType
 import os
 from dotenv import load_dotenv
-load_dotenv("/Users/yashsonawane/Advance structural /.env")
+load_dotenv()
 import urllib.request
 import urllib.parse
 import json

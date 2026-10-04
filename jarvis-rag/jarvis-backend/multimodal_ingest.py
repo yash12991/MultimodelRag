@@ -6,7 +6,7 @@ import mimetypes
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
-load_dotenv("/Users/yashsonawane/Advance structural /.env")
+load_dotenv()
 
 from google import genai
 from google.genai import types
